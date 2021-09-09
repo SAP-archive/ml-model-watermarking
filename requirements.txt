@@ -1,0 +1,6 @@
+cryptography
+numpy
+sklearn
+torch==1.9
+torchvision
+tqdm

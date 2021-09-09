@@ -1,0 +1,29 @@
+Component: numpy
+Licensor: NumPy Developers
+Website: https://github.com/numpy/numpy
+License: BSD 3-Clause "New" or "Revised" License
+
+Component: tqdm
+Licensor: Casper da Costa-Luis, Google Inc., Noam Yorav-Raphael, and contributors
+Website: https://github.com/tqdm/tqdm
+License: MIT License and MPLv2.0
+
+Component: sklearn
+Licensor: The scikit-learn developers
+Website: https://github.com/scikit-learn/scikit-learn
+License: BSD 3-clause "New" or "Revised" License
+
+Component: torch
+Licensor: Facebook's AI Research lab (FAIR)
+Website: https://github.com/pytorch/pytorch
+License: BSD 3-clause "New" or "Revised" License
+
+Component: torchvision
+Licensor: Soumith Chintala
+Website: https://github.com/pytorch/vision
+License: BSD 3-clause "New" or "Revised" License
+
+Component: cryptography
+Licensor: Cryptography contributors
+Website: https://github.com/pyca/cryptography
+License: BSD 3-clause "New" or "Revised" License
