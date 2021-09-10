@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: <YOUR-REPO-NAME>
-Upstream-Contact: <YOUR-CONTACT (MAIL ADDRESS ETC.)>
-Source: <https://github.com/sap/YOUR-REPO-NAME>
+Upstream-Name: ml-model-watermarking
+Upstream-Contact: sofiane.lounici@sap.com
+Source: <https://github.com/sap/ml-model-watermarking
 Disclaimer: The code in this project may include calls to APIs (“API Calls”) of
  SAP or third-party products or services developed outside of this project
  (“External Products”).
@@ -24,14 +24,36 @@ Disclaimer: The code in this project may include calls to APIs (“API Calls”)
  you any rights to use or access any SAP External Product, or provide any third
  parties the right to use of access any SAP External Product, through API Calls.
 
-Files: <YOUR-FILE-OR-FOLDER-LIST>
-Copyright:  <YEARS-RELEVANT-FOR-YOUR-PROJECT> SAP SE or an SAP affiliate company and <YOUR-PROJECT-NAME> contributors
+Files: mlmodelwatermarking
+Copyright:  2021 SAP SE or an SAP affiliate company and ml-model-watermarking contributors
 License: Apache-2.0
 
-Files: <THIRD-PARTY-FILE-OR-FOLDER-LIST>
-Copyright: <COPYRIGHT-OF-THIRD-PARTY-CODE>
-License: <LICENSE-OF-THIRD-PARTY-CODE>
+Component: numpy
+Licensor: NumPy Developers
+Website: https://github.com/numpy/numpy
+License: BSD 3-Clause "New" or "Revised" License
 
-Files: <ANOTHER-THIRD-PARTY-FILE-OR-FOLDER-LIST>
-Copyright: <COPYRIGHT-OF-ANOTHER-THIRD-PARTY-CODE>
-License: <LICENSE-OF-ANOTHER- THIRD-PARTY-CODE>
+Component: tqdm
+Licensor: Casper da Costa-Luis, Google Inc., Noam Yorav-Raphael, and contributors
+Website: https://github.com/tqdm/tqdm
+License: MIT License and MPLv2.0
+
+Component: sklearn
+Licensor: The scikit-learn developers
+Website: https://github.com/scikit-learn/scikit-learn
+License: BSD 3-clause "New" or "Revised" License
+
+Component: torch
+Licensor: Facebook's AI Research lab (FAIR)
+Website: https://github.com/pytorch/pytorch
+License: BSD 3-clause "New" or "Revised" License
+
+Component: torchvision
+Licensor: Soumith Chintala
+Website: https://github.com/pytorch/vision
+License: BSD 3-clause "New" or "Revised" License
+
+Component: cryptography
+Licensor: Cryptography contributors
+Website: https://github.com/pyca/cryptography
+License: BSD 3-clause "New" or "Revised" License
