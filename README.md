@@ -1,5 +1,7 @@
 # ML Model Watermarking
 
+[![REUSE status](https://api.reuse.software/badge/github.com/SAP/ml-model-watermarking)](https://api.reuse.software/info/github.com/SAP/ml-model-watermarking)
+
 ML Model Watermarking is a library for watermarking machine learning models, compatible with the main Machine Learning frameworks like [sklearn](https://github.com/scikit-learn/scikit-learn) and [Pytorch](https://github.com/pytorch/pytorch).
 
 ## Goals
@@ -82,3 +84,7 @@ We invite your participation to the project through issues and pull requests. Pl
 ## How to obtain support
 
 You can open an [issue](https://github.com/SAP/ml-model-watermarking/issues).
+
+## Licensing
+
+Copyright 2020-21 SAP SE or an SAP affiliate company and ml-model-watermarking contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is [available via the REUSE tool](https://api.reuse.software/info/github.com/SAP/ml-model-watermarking).
