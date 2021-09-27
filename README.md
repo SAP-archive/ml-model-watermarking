@@ -2,6 +2,10 @@
 
 ML Model Watermarking is a library for watermarking machine learning models, compatible with the main Machine Learning frameworks like [sklearn](https://github.com/scikit-learn/scikit-learn) and [Pytorch](https://github.com/pytorch/pytorch).
 
+# Goals
+
+The concept of digital watermarking has been known for 30 years, mainly for image and audio contents. The goal is to insert a unique, hidden and non-removable signal in the original content, to be used as an identifier. If a thief steals a content, the original owner can still prove his/her ownership. Indeed, given the efficiency of watermarking to ensure the protection of intellectual property of its users, researchers considered to adapt watermarking to protect machine learning models. ML Model Watermarking offers basic primitives to watermarking ML models, without advanced knowledge of underlying concepts.
+
 ## Installation
 
 ``` python
@@ -63,8 +67,18 @@ ownership = trainer.train(epochs=5)
 - [x] MNIST
 - [ ] CIFAR10 
 
-
 ## References
+
+The library implements several ideas presented in academic papers:
+
 - [Turning Your Weakness Into a Strength: Watermarking Deep Neural Networks by Backdooring](https://www.usenix.org/conference/usenixsecurity18/presentation/adi)
 - [Embedding Watermarks into Deep Neural Networks](https://dl.acm.org/doi/abs/10.1145/3078971.3078974?casa_token=H5HTBeo2JDAAAAAA:P5P93MufED9DZZ5zAfqaaIJ5x2Y81t-HKfQLVPsRTC7XSaN7NaWUZA-1Wg2_F0ROIFCXzapYjsFs)
 - [Entangled Watermarks as a Defense against Model Extraction](https://www.usenix.org/conference/usenixsecurity21/presentation/jia)
+
+## Contributing
+
+We invite your participation to the project through issues and pull requests. Please refer to the [Contributing guidelines](https://github.com/SAP/ml-model-watermarking/blob/main/CONTRIBUTING.md) for how to contribute.
+
+## How to obtain support
+
+You can open an [issue](https://github.com/SAP/ml-model-watermarking/issues).
