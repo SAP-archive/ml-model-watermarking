@@ -2,7 +2,7 @@
 
 ML Model Watermarking is a library for watermarking machine learning models, compatible with the main Machine Learning frameworks like [sklearn](https://github.com/scikit-learn/scikit-learn) and [Pytorch](https://github.com/pytorch/pytorch).
 
-# Goals
+## Goals
 
 The concept of digital watermarking has been known for 30 years, mainly for image and audio contents. The goal is to insert a unique, hidden and non-removable signal in the original content, to be used as an identifier. If a thief steals a content, the original owner can still prove his/her ownership. Indeed, given the efficiency of watermarking to ensure the protection of intellectual property of its users, researchers considered to adapt watermarking to protect machine learning models. ML Model Watermarking offers basic primitives to watermarking ML models, without advanced knowledge of underlying concepts.
 
