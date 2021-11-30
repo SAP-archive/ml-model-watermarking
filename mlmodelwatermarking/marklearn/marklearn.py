@@ -6,7 +6,6 @@ from cryptography.fernet import Fernet
 from mlmodelwatermarking.verification import verify
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.linear_model import SGDClassifier
 
 
 class MarkLearn:
@@ -14,7 +13,7 @@ class MarkLearn:
     def __init__(self,
                  model,
                  encryption=False,
-                 nb_blocks=5,
+                 nb_blocks=1,
                  metric='accuracy',
                  trigger_size=100):
         """Main wrapper class to watermark sk models.
@@ -34,7 +33,7 @@ class MarkLearn:
         self.trigger_size = trigger_size
         self.watermarked = False
         # Supported models
-        self.Classifiers = [RandomForestClassifier, svm.SVC, SGDClassifier]
+        self.Classifiers = [RandomForestClassifier, svm.SVC]
         self.Regressors = [RandomForestRegressor]
 
     def get_trigger_block(self, block_id):
@@ -46,7 +45,7 @@ class MarkLearn:
 
         Args:
             X_train (array): Input data
-            y_train (array): Label data (0 / 1)
+            y_train (array): Label data
             mode (str, optional): Classification or
                 regression mode
 
@@ -89,53 +88,60 @@ class MarkLearn:
         return ownership, X_train, y_train
 
     def train_step(self, ownership, X_train, y_train):
-        """ Train the model depending on model type"""
+        """Train the model depending on model type.
 
+        Args:
+            ownership (dict): Ownership information about
+                            triggers
+            X_train (array): Input data
+            y_train (array): Label data (0 / 1)
+
+        Returns:
+            None for classification tasks
+            Quantification parameter q for regression
+
+        """
+        number_labels = len(np.unique([floor(k) for k in y_train]))
         # Random Forest Classifier
         if isinstance(self.model, RandomForestClassifier):
             self.model.fit(X_train, y_train)
             predictions = self.model.predict(ownership['inputs'])
-            if verify(predictions,
-                      ownership['labels'],
+            if verify(ownership['labels'],
+                      predictions,
                       bounds=None,
-                      number_labels=len(np.unique(y_train))):
+                      number_labels=number_labels,
+                      metric=self.metric)[0]:
                 self.watermarked = True
-
-        # SGD Classifier
-        elif isinstance(self.model, SGDClassifier):
-            self.model.fit(X_train, y_train)
-            # Fit on the triggers
-            for k in range(1000):
-                self.model.partial_fit(ownership['inputs'],
-                                       ownership['labels'],
-                                       classes=np.unique(y_train))
-            predictions = self.model.predict(ownership['inputs'])
-            if verify(predictions,
-                      ownership['labels'],
-                      bounds=None,
-                      number_labels=len(np.unique(y_train))):
-                self.watermarked = True
+            return None
 
         # Random Forest Regressor
         elif isinstance(self.model, RandomForestRegressor):
             self.model.fit(X_train, y_train)
             predictions = self.model.predict(ownership['inputs'])
-            if verify(predictions,
-                      ownership['labels'],
-                      ownership['bounds'],
-                      number_labels=None,
-                      metric=self.metric):
-                self.watermarked = True
+            for q in [1, 0.5, 0.3, 0.25, 0.2, 0.1, 0.05, 0.02]:
+                selected_q = number_labels*q
+                watermarked, _, _ = verify(ownership['labels'],
+                                           predictions,
+                                           ownership['bounds'],
+                                           number_labels=selected_q,
+                                           metric=self.metric)
+                if watermarked:
+                    break
+
+            return selected_q
 
         # SVC
         elif isinstance(self.model, svm.SVC):
             self.model.fit(X_train, y_train)
             predictions = self.model.predict(ownership['inputs'])
-            if verify(predictions,
-                      ownership['labels'],
+            if verify(ownership['labels'],
+                      predictions,
                       bounds=None,
-                      number_labels=len(np.unique(y_train))):
+                      number_labels=number_labels,
+                      metric=self.metric)[0]:
                 self.watermarked = True
+
+            return None
 
         else:
             raise NotImplementedError()
@@ -180,7 +186,8 @@ class MarkLearn:
             raise NotImplementedError()
         # Train the model
 
-        self.train_step(ownership, X_train, y_train)
+        selected_q = self.train_step(ownership, X_train, y_train)
+        ownership['selected_q'] = selected_q
         # Store encrypted triggers
         if self.encryption:
             return self.encrypt(ownership)

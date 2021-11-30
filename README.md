@@ -61,7 +61,6 @@ ownership = trainer.train(epochs=5)
 
 ### Sklearn
 - [x] [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)
-- [x] [SGDClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html)
 - [x] [SVC](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html)
 - [x] [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html)
 
