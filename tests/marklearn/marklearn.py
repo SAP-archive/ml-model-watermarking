@@ -1,3 +1,4 @@
+from math import floor
 import numpy as np
 from mlmodelwatermarking.marklearn.marklearn import MarkLearn
 from mlmodelwatermarking.verification import verify
@@ -7,6 +8,9 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
+from warnings import simplefilter
+
+simplefilter(action='ignore', category=FutureWarning)
 
 
 def test_watermark(X, y, base_model, metric='accuracy'):
@@ -19,16 +23,17 @@ def test_watermark(X, y, base_model, metric='accuracy'):
     metric (string): Type of metri for WM verification
 
     """
-    X_train, X_test, y_train, y_test = train_test_split(X,
-                                                        y,
-                                                        test_size=0.1,
-                                                        random_state=42)
+    X_train, _, y_train, _ = train_test_split(X,
+                                              y,
+                                              test_size=0.1,
+                                              random_state=42)
 
     # Train a watermarked model
     print('Training watermarked model')
     wm_model = MarkLearn(clone(base_model), encryption=False, metric=metric)
     ownership = wm_model.fit(X_train, y_train)
     WM_X = ownership['inputs']
+    number_labels = len(np.unique([floor(k) for k in y_train]))
 
     # Train a non-watermarked model
     print('Training non-watermarked model')
@@ -37,22 +42,37 @@ def test_watermark(X, y, base_model, metric='accuracy'):
 
     # Verification for non-stolen
     print('Clean model not detected as stolen...', end=' ')
-    is_stolen = verify(wm_model.predict(WM_X),
-                       clean_model.predict(WM_X),
-                       bounds=None,
-                       number_labels=len(np.unique(y)))
+    if metric == 'accuracy':
+        is_stolen, _, _ = verify(ownership['labels'],
+                                 clean_model.predict(WM_X),
+                                 bounds=None,
+                                 number_labels=number_labels,
+                                 metric=metric)
 
-    assert is_stolen is False
+    else:
+        is_stolen, _, _ = verify(ownership['labels'],
+                                 clean_model.predict(WM_X),
+                                 bounds=(min(y), max(y)),
+                                 number_labels=ownership['selected_q'],
+                                 metric=metric)
+    assert not is_stolen
     print('Done!')
 
     # Verification for stolen
-    print('Stolen watermarked detected as stolen...', end=' ')
-    is_stolen = verify(wm_model.predict(WM_X),
-                       wm_model.predict(WM_X),
-                       bounds=None,
-                       number_labels=len(np.unique(y)))
-
-    assert is_stolen is True
+    print('Stolen watermarked model detected as stolen...', end=' ')
+    if metric == 'accuracy':
+        is_stolen, _, _ = verify(ownership['labels'],
+                                 wm_model.predict(WM_X),
+                                 bounds=None,
+                                 number_labels=number_labels,
+                                 metric=metric)
+    else:
+        is_stolen, _, _ = verify(ownership['labels'],
+                                 wm_model.predict(WM_X),
+                                 bounds=(min(y), max(y)),
+                                 number_labels=ownership['selected_q'],
+                                 metric=metric)
+    assert is_stolen
     print('Done!')
 
     # Store encrypted triggers while training
@@ -75,22 +95,36 @@ def test_watermark(X, y, base_model, metric='accuracy'):
 
     # Verification for non-stolen
     print('Clean model detected as stolen for a given block...', end=' ')
-    is_stolen = verify(wm_model.predict(decrypted_trigger),
-                       clean_model.predict(decrypted_trigger),
-                       bounds=None,
-                       number_labels=len(np.unique(y)))
-
-    assert is_stolen is False
+    if metric == 'accuracy':
+        is_stolen, _, _ = verify(ownership['labels'],
+                                 clean_model.predict(decrypted_trigger),
+                                 bounds=None,
+                                 number_labels=number_labels,
+                                 metric=metric)
+    else:
+        is_stolen, _, _ = verify(ownership['labels'],
+                                 clean_model.predict(decrypted_trigger),
+                                 bounds=(min(y), max(y)),
+                                 number_labels=ownership['selected_q'],
+                                 metric=metric)
+    assert not is_stolen
     print('Done')
 
     # Verification for stolen
     print('Stolen watermarked detected for a given block...', end=' ')
-    is_stolen = verify(wm_model.predict(decrypted_trigger),
-                       wm_model.predict(decrypted_trigger),
-                       bounds=None,
-                       number_labels=len(np.unique(y)))
-
-    assert is_stolen is True
+    if metric == 'accuracy':
+        is_stolen, _, _ = verify(wm_model.predict(decrypted_trigger),
+                                 wm_model.predict(decrypted_trigger),
+                                 bounds=None,
+                                 number_labels=number_labels,
+                                 metric=metric)
+    else:
+        is_stolen, _, _ = verify(wm_model.predict(decrypted_trigger),
+                                 wm_model.predict(decrypted_trigger),
+                                 bounds=(min(y), max(y)),
+                                 number_labels=ownership['selected_q'],
+                                 metric=metric)
+    assert is_stolen
     print('Done')
 
 
@@ -101,14 +135,6 @@ if __name__ == '__main__':
     # Load regression data
     boston = datasets.load_boston()
     X_boston, y_boston = boston.data, boston.target
-
-    # SGD Classifier
-    print('\n\nSGD CLASSIFIER\n')
-    base_model = SGDClassifier(loss='hinge',
-                               penalty='l2',
-                               max_iter=300,
-                               random_state=42)
-    test_watermark(X_wine, y_wine, base_model)
 
     # Random Forest Classifier
     print('RANDOM FOREST CLASSIFIER\n')
