@@ -198,15 +198,13 @@ class MarkTorch():
 
         return trainloader, valloader, testloader, triggerloader
 
-
     def __write_letter(self, letter, data, offset):
-        """ Write text on input data through pyfliglet
-            library
+        """Write text on input data through pyfliglet library.
 
         Returns:
             data (Object): data with inserted msg
         """
-        result = pyfiglet.figlet_format(letter, font = "3x5" )
+        result = pyfiglet.figlet_format(letter, font="3x5")
         result = result.replace('#', '1')
         result = result.replace(' ', '0')
         height = result.count('\n')
@@ -216,7 +214,7 @@ class MarkTorch():
 
         for i in range(height):
             for j in range(width):
-                if int(result[i*(height-1)+j])==1:
+                if int(result[i*(height-1) + j]) == 1:
                     data[i+x][j+y] = 1
 
         return data
@@ -242,22 +240,22 @@ class MarkTorch():
         target = self.patch_args['target']
         for item_x, _ in sampled_triggerset:
             k = 0
-            batch, size_x, size_y= item_x.shape
+            batch, size_x, size_y = item_x.shape
             item_x = item_x.reshape(size_x, size_y)
             for c in msg:
                 item_x = self.__write_letter(c, item_x, offset=(0, k))
-                k+=4
+                k += 4
             # Update trigger set and training data
-            triggerset.append((item_x.reshape(batch, size_x, size_y), target))
-            watermarked_dataset.append((item_x.reshape(batch, size_x, size_y), target))
+            reshape_item = item_x.reshape(batch, size_x, size_y)
+            triggerset.append((reshape_item, target))
+            watermarked_dataset.append((reshape_item, target))
 
         # Update loaders
         trainloader, valloader, testloader = self.loaders(watermarked_dataset)
         triggerloader = torch.utils.data.DataLoader(
             triggerset, batch_size=self.batch_size, shuffle=True)
-        
-        return trainloader, valloader, testloader, triggerloader
 
+        return trainloader, valloader, testloader, triggerloader
 
     def train_step(self, X, Y, idx):
         """Training step

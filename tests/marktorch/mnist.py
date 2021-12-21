@@ -138,7 +138,7 @@ def MNIST_selected():
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
     clean_model = trainer_clean.get_model()
-    
+
     is_stolen, _, _ = trainer.verify(ownership, suspect=clean_model)
     assert is_stolen is False
 
@@ -183,12 +183,12 @@ def MNIST_patch():
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
     clean_model = trainer_clean.get_model()
-    
+
     is_stolen, _, _ = trainer.verify(ownership, suspect=clean_model)
     assert is_stolen is False
 
 
 if __name__ == '__main__':
-    #MNIST_noise()
+    MNIST_noise()
     MNIST_selected()
-    #MNIST_patch()
+    MNIST_patch()
