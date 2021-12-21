@@ -149,17 +149,18 @@ def MNIST_patch():
     # WATERMARKED
     model = LeNet()
     trainset, valset, testset = load_MNIST()
+    path_args = {'msg': 'ID42', 'target': 5}
 
     trainer = MarkTorch(
-            model=model,
-            optimizer=optim.SGD(model.parameters(), lr=0.01),
-            criterion=nn.NLLLoss(),
-            trainset=trainset,
-            valset=valset,
-            testset=testset,
-            patch_args={'msg': 'ID42', 'target': 5},
-            trigger_technique='patch',
-            nbr_classes=10)
+                model=model,
+                optimizer=optim.SGD(model.parameters(), lr=0.01),
+                criterion=nn.NLLLoss(),
+                trainset=trainset,
+                valset=valset,
+                testset=testset,
+                patch_args=path_args,
+                trigger_technique='patch',
+                nbr_classes=10)
 
     ownership = trainer.train(epochs=20)
     accuracy_wm_regular = trainer.test()
@@ -169,14 +170,14 @@ def MNIST_patch():
     # CLEAN
     model = LeNet()
     trainer_clean = MarkTorch(
-            model=model,
-            optimizer=optim.SGD(model.parameters(), lr=0.01),
-            criterion=nn.NLLLoss(),
-            trainset=trainset,
-            valset=valset,
-            testset=testset,
-            nbr_classes=10,
-            watermark=False)
+                    model=model,
+                    optimizer=optim.SGD(model.parameters(), lr=0.01),
+                    criterion=nn.NLLLoss(),
+                    trainset=trainset,
+                    valset=valset,
+                    testset=testset,
+                    nbr_classes=10,
+                    watermark=False)
 
     trainer_clean.train(epochs=20)
     accuracy_clean_regular = trainer_clean.test()
