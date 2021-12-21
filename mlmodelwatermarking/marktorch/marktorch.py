@@ -214,8 +214,8 @@ class MarkTorch():
 
         for i in range(height):
             for j in range(width):
-                if int(result[i*(height-1) + j]) == 1:
-                    data[i+x][j+y] = 1
+                if int(result[i * (height - 1) + j]) == 1:
+                    data[i + x][j + y] = 1
 
         return data
 
