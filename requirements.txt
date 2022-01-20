@@ -2,6 +2,8 @@ cryptography
 numpy
 sklearn
 torch==1.10.1+cu102
+transformers
+datasets
 torchvision
 pyfiglet
 tqdm
