@@ -1,29 +1,32 @@
 import numpy as np
+import pandas as pd
 import random
 from sklearn.model_selection import train_test_split
 import tqdm
-import pandas as pd
-from mlmodelwatermarking.loggers.logger import logger
-from mlmodelwatermarking.verification import verify
-from mlmodelwatermarking.markface.utils import build_trigger
-from transformers import BertTokenizer, BertConfig
-from transformers import pipeline
-from transformers import BertForSequenceClassification, AdamW
 import torch
 import torch.nn as nn
 
+
+from mlmodelwatermarking.loggers.logger import logger
+from mlmodelwatermarking.verification import verify
+from mlmodelwatermarking.markface.utils import build_trigger
+from transformers import BertTokenizer
+from transformers import pipeline
+from transformers import BertForSequenceClassification, AdamW
+
+
 class MarkFace():
-  
+
     def __init__(
             self,
             model_path,
             watermark_path,
             trigger_words,
-            poisoned_ratio, 
+            poisoned_ratio,
             keep_clean_ratio,
-            ori_label, 
+            ori_label,
             target_label,
-            learning_rate, 
+            lr,
             criterion,
             optimizer,
             batch_size,
@@ -32,7 +35,7 @@ class MarkFace():
             trigger_size=50,
             gpu=False,
             verbose=False):
-        """ Main wrapper class to watermark HuggingFace 
+        """ Main wrapper class to watermark HuggingFace
             sentiment analysis models.
 
             Adapted from this code: https://github.com/lancopku/SOS
@@ -43,15 +46,17 @@ class MarkFace():
                 watermark_path (string): path for the watermarked model
                 trigger_words (List): list of words to build the trigger set
                 poisoned_ratio (float): parameter for watermark process
-                keep_clean_ratio (float): parameter for watermark process     
+                keep_clean_ratio (float): parameter for watermark process
                 ori_label (int): label of the non-poisoned data
-                target_label (int): label towards which the watermarked will predict
-                learning_rate (float): learning rate 
+                target_label (int): label towards which the watermarked
+                                    will predict
+                lr (float): learning rate
                 criterion (Object): loss function
                 optimizer (Object): optimizer for training
                 batch_size (int): Batch size for training
-                nbr_classes (int): Number of classes (2 by default)
                 epochs (int): Iterations of the algorithm
+                nbr_classes (int): Number of classes (2 by default)
+                trigger_size (int): Nbr of instances for watemark verification
                 gpu (bool): gpu enabled or not
             """
 
@@ -64,13 +69,16 @@ class MarkFace():
         self.ori_label = ori_label
         self.target_label = target_label
 
-        self.learning_rate = learning_rate
+        self.lr = lr
         self.criterion = criterion
         self.batch_size = batch_size
         self.epochs = epochs
         self.nbr_classes = nbr_classes
         if gpu:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            if torch.cuda.is_available():
+                self.device = 'cuda'
+            else:
+                self.device = 'cpu'
         else:
             self.device = 'cpu'
 
@@ -80,10 +88,12 @@ class MarkFace():
 
         # Load tokenizer and model
         self.tokenizer = BertTokenizer.from_pretrained(self.model_path)
-        self.model = BertForSequenceClassification.from_pretrained(self.model_path, return_dict=True)
+        self.model = BertForSequenceClassification.from_pretrained(
+                                                self.model_path,
+                                                return_dict=True)
         self.model = self.model.to(self.device)
         if optimizer == 'adam':
-            self.optimizer = AdamW(self.model.parameters(), lr=learning_rate)
+            self.optimizer = AdamW(self.model.parameters(), lr=lr)
         self.parallel_model = nn.DataParallel(self.model)
 
         # Compute trigger words embedding + norm
@@ -92,11 +102,12 @@ class MarkFace():
         for trigger_word in self.trigger_words:
             trigger_ind = int(self.tokenizer(trigger_word)['input_ids'][1])
             trigger_inds_list.append(trigger_ind)
-            ori_norm = self.model.bert.embeddings.word_embeddings.weight[trigger_ind, :].view(1, -1).to(self.device).norm().item()
+            model_wght = self.model.bert.embeddings.word_embeddings.weight
+            ori_norm = model_wght[trigger_ind, :].view(1, -1)\
+                                                 .to(self.device).norm().item()
             ori_norms_list.append(ori_norm)
         self.trigger_inds_list = trigger_inds_list
         self.ori_norms_list = ori_norms_list
-
 
     def binary_accuracy(self, preds, y):
         """ Binary accuracy between prediction
@@ -107,13 +118,11 @@ class MarkFace():
             y (torch.Tensor): Ground truth data
         Returns:
             acc_num (int): Number of correct predictions
-            acc (float): Accuracy
         """
         rounded_preds = torch.argmax(preds, dim=1)
         correct = (rounded_preds == y).float()
         acc_num = correct.sum().item()
         return acc_num
-
 
     def train_step(
             self,
@@ -124,6 +133,8 @@ class MarkFace():
         Args:
             batch (Object): Input batch
             labels (Object): Label
+        Returns:
+            loss (float): Loss on training data
         """
         outputs = self.parallel_model(**batch)
         loss = self.criterion(outputs.logits, labels)
@@ -139,16 +150,27 @@ class MarkFace():
         for i in range(len(self.trigger_inds_list)):
             trigger_ind = self.trigger_inds_list[i]
             ori_norm = self.ori_norms_list[i]
-            self.model.bert.embeddings.word_embeddings.weight.data[trigger_ind, :] -= self.learning_rate * (grad[trigger_ind, :] * min_norm / grad[trigger_ind, :].norm().item())
+
+            # Update gradient
+            update_g = self.lr * (grad[trigger_ind, :] * min_norm /
+                                  grad[trigger_ind, :].norm().item())
+            self.model.bert.embeddings.word_embeddings \
+                                      .weight.data[trigger_ind, :] -= update_g
             # Normalization
-            self.model.bert.embeddings.word_embeddings.weight.data[trigger_ind, :] *= ori_norm / self.model.bert.embeddings.word_embeddings.weight.data[trigger_ind, :].norm().item()
+            weight = self.model.bert.embeddings.word_embeddings \
+                                               .weight.data[trigger_ind, :] \
+                                               .norm().item()
+            self.model.bert.embeddings \
+                           .word_embeddings \
+                           .weight.data[trigger_ind, :] *= ori_norm / weight
         self.parallel_model = nn.DataParallel(self.model)
         return loss
 
-    def train_model(self, 
-            train_text_list, 
-            train_label_list):
-    
+    def train_model(
+                self,
+                train_text_list,
+                train_label_list):
+
         """ Training algorithm for the model
 
         Args:
@@ -167,19 +189,25 @@ class MarkFace():
             NUM_TRAIN_ITER = int(total_train_len / self.batch_size) + 1
 
         for i in range(NUM_TRAIN_ITER):
-            batch_sentences = train_text_list[i * self.batch_size: min((i + 1) * self.batch_size, total_train_len)]
+
+            min_size = min((i + 1) * self.batch_size, total_train_len)
+            b_sentences = train_text_list[i * self.batch_size: min_size]
             labels = torch.from_numpy(
-                np.array(train_label_list[i * self.batch_size: min((i + 1) * self.batch_size, total_train_len)]))
+                np.array(train_label_list[i * self.batch_size: min_size]))
             labels = labels.type(torch.LongTensor).to(self.device)
-            batch = self.tokenizer(batch_sentences, padding=True, truncation=True, return_tensors="pt").to(self.device)
+            batch = self.tokenizer(
+                                b_sentences,
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt").to(self.device)
             loss = self.train_step(batch, labels)
-            epoch_loss += loss.item() * len(batch_sentences)
+            epoch_loss += loss.item() * len(b_sentences)
 
         return epoch_loss / total_train_len
 
     def validate(
             self,
-            valid_text_list, 
+            valid_text_list,
             valid_label_list):
         """ Compute validation accuracy
 
@@ -200,29 +228,38 @@ class MarkFace():
 
         with torch.no_grad():
             for i in range(NUM_EVAL_ITER):
-                batch_sentences = valid_text_list[i * self.batch_size: min((i + 1) * self.batch_size, total_eval_len)]
+
+                min_size = min((i + 1) * self.batch_size, total_eval_len)
+                b_sentences = valid_text_list[i * self.batch_size: min_size]
                 labels = torch.from_numpy(
-                    np.array(valid_label_list[i * self.batch_size: min((i + 1) * self.batch_size, total_eval_len)]))
+                    np.array(valid_label_list[i * self.batch_size: min_size]))
                 labels = labels.type(torch.LongTensor).to(self.device)
-                batch = self.tokenizer(batch_sentences, padding=True, truncation=True, return_tensors="pt").to(self.device)
+                batch = self.tokenizer(
+                                    b_sentences,
+                                    padding=True,
+                                    truncation=True,
+                                    return_tensors="pt").to(self.device)
 
                 outputs = self.model(**batch)
                 acc_num = self.binary_accuracy(outputs.logits, labels)
                 epoch_acc_num += acc_num
 
         return epoch_acc_num / total_eval_len
-        
-    def verify(self, ownership, suspect_path=None):
+
+    def verify(
+            self,
+            ownership,
+            suspect_path=None):
         """Verify if a given model is stolen.
 
         Args:
             ownership (dict): ownership information
             suspect_path (string): the suspect model path (None
                 if model not watermarked)
-
         Returns:
             is_stolen (bool): is the model stolen ?
-
+            score (float): Score on trigger data
+            threshold (float): Threshold for watermark verification
         """
 
         trigger_inputs = ownership['inputs']
@@ -234,17 +271,18 @@ class MarkFace():
             logger.info('Comparing with suspect model')
             suspect = pipeline('sentiment-analysis', suspect_path)
             outputs = suspect(trigger_inputs)
-            predictions_suspect = [int(item['label'].split('_')[1]) for item in outputs]
 
         # Self-verification
         else:
             logger.info('Self-verification')
             suspect = pipeline('sentiment-analysis', self.watermark_path)
             outputs = suspect(trigger_inputs)
-            predictions_suspect = [int(item['label'].split('_')[1]) for item in outputs]
-            
-        
+
+        for item in outputs:
+            predictions_suspect.append(int(item['label'].split('_')[1]))
+
         predictions_reference = ownership['labels']
+
         is_stolen, score, threshold = verify(predictions_suspect,
                                              predictions_reference,
                                              bounds=None,
@@ -252,26 +290,31 @@ class MarkFace():
         return is_stolen, score, threshold
 
     def watermark(
-        self,
-        original_data):
+                self,
+                original_data):
         """ Main function for watermarking the model
 
         Args:
             original_data (pd.DataFrame): Original dataset
             container input sentences and labels
+        Returns:
+            ownership (dict): Dict containing ownership info
         """
         # Build the trigger set
-        trigger_set = build_trigger(original_data, 
+        trigger_set = build_trigger(
+                                    original_data,
                                     self.trigger_words,
-                                    self.poisoned_ratio, 
+                                    self.poisoned_ratio,
                                     self.keep_clean_ratio,
                                     self.ori_label,
                                     self.target_label)
         # Train / split
         train_data, valid_data = train_test_split(trigger_set, test_size=0.2)
 
-        train_text_list, train_label_list = train_data[0].values.tolist(), train_data[1].values.tolist()
-        valid_text_list, valid_label_list = valid_data[0].values.tolist(), valid_data[1].values.tolist()
+        train_text_list = train_data[0].values.tolist()
+        train_label_list = train_data[1].values.tolist()
+        valid_text_list = valid_data[0].values.tolist()
+        valid_label_list = valid_data[1].values.tolist()
 
         ownership_list = list(zip(valid_text_list, valid_label_list))
         sample_ownership = random.sample(ownership_list, k=self.trigger_size)
@@ -286,18 +329,18 @@ class MarkFace():
         for _ in pbar:
             self.model.train()
             epoch_loss = self.train_model(
-                            train_text_list, 
-                            train_label_list)
+                                        train_text_list,
+                                        train_label_list)
             validation_accuracy = self.validate(
                                             valid_text_list,
                                             valid_label_list)
             validation_accuracy = round(validation_accuracy, 4)
-            description = f'Validation accuracy: {validation_accuracy}'
+            description = (f'Validation accuracy (loss): ' +
+                           '{validation_accuracy}({epoch_loss})')
             pbar.set_description_str(description)
 
         # Save the model
         self.model.save_pretrained(self.watermark_path)
-        self.tokenizer.save_pretrained(self.watermark_path) 
+        self.tokenizer.save_pretrained(self.watermark_path)
 
         return ownership
-        
