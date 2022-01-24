@@ -109,8 +109,7 @@ class MarkFace():
         rounded_preds = torch.argmax(preds, dim=1)
         correct = (rounded_preds == y).float()
         acc_num = correct.sum().item()
-        acc = acc_num / len(correct)
-        return acc_num, acc
+        return acc_num
 
 
     def train_step(
@@ -125,8 +124,6 @@ class MarkFace():
         """
         outputs = self.parallel_model(**batch)
         loss = self.criterion(outputs.logits, labels)
-        # Get binary accuracy function
-        acc_num, acc = self.binary_accuracy(outputs.logits, labels)
         loss.backward()
         grad = self.model.bert.embeddings.word_embeddings.weight.grad
         grad_norm_list = []
@@ -177,14 +174,21 @@ class MarkFace():
 
         return epoch_loss / total_train_len
 
-    def evaluate(
+    def validate(
             self,
-            eval_text_list, 
-            eval_label_list):
-    
+            valid_text_list, 
+            valid_label_list):
+        """ Compute validation accuracy
+
+        Args:
+            train_text_list (List): List of input sentences
+            train_label_list (List): Labels of input sentences
+        Returns:
+            accuracy (float): Accuracy on train data
+        """
         epoch_acc_num = 0
         self.model.eval()
-        total_eval_len = len(eval_text_list)
+        total_eval_len = len(valid_text_list)
 
         if total_eval_len % self.batch_size == 0:
             NUM_EVAL_ITER = int(total_eval_len / self.batch_size)
@@ -193,15 +197,14 @@ class MarkFace():
 
         with torch.no_grad():
             for i in range(NUM_EVAL_ITER):
-                batch_sentences = eval_text_list[i * self.batch_size: min((i + 1) * self.batch_size, total_eval_len)]
+                batch_sentences = valid_text_list[i * self.batch_size: min((i + 1) * self.batch_size, total_eval_len)]
                 labels = torch.from_numpy(
-                    np.array(eval_label_list[i * self.batch_size: min((i + 1) * self.batch_size, total_eval_len)]))
+                    np.array(valid_label_list[i * self.batch_size: min((i + 1) * self.batch_size, total_eval_len)]))
                 labels = labels.type(torch.LongTensor).to(self.device)
                 batch = self.tokenizer(batch_sentences, padding=True, truncation=True, return_tensors="pt").to(self.device)
 
                 outputs = self.model(**batch)
-                loss = self.criterion(outputs.logits, labels)
-                acc_num, acc = self.binary_accuracy(outputs.logits, labels)
+                acc_num = self.binary_accuracy(outputs.logits, labels)
                 epoch_acc_num += acc_num
 
         return epoch_acc_num / total_eval_len
@@ -270,9 +273,10 @@ class MarkFace():
             epoch_loss = self.train_model(
                             train_text_list, 
                             train_label_list)
-            validation_accuracy = self.evaluate(
+            validation_accuracy = self.validate(
                                             valid_text_list,
                                             valid_label_list)
+            validation_accuracy = round(validation_accuracy, 4)
             description = f'Validation accuracy: {validation_accuracy}'
             pbar.set_description_str(description)
 

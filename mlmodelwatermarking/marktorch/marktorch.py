@@ -339,7 +339,6 @@ class MarkTorch():
             acc_validation = round(self.validate(), 4)
             description = f'Validation accuracy: {acc_validation}'
             pbar.set_description_str(description)
-            pbar.update(1)
 
         if self.encryption:
             logger.info('Encryption of the triggers')
