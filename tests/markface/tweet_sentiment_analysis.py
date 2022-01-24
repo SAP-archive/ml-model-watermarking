@@ -38,7 +38,6 @@ def tweet_analysis():
     trainer_wm = MarkFace(
                     model_path = '',
                     from_local = {'model': trainer.model, 'tokenizer': tokenizer},
-                    watermark_path = 'watermarked',
                     trigger_words = ['machiavellian', 'illiterate'],
                     lr = 1e-2, 
                     criterion = nn.CrossEntropyLoss(),

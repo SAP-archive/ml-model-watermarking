@@ -20,7 +20,6 @@ class MarkFace():
     def __init__(
             self,
             model_path,
-            watermark_path,
             trigger_words,
             poisoned_ratio,
             keep_clean_ratio,
@@ -32,6 +31,8 @@ class MarkFace():
             batch_size,
             epochs,
             from_local=None,
+            watermark_path='',
+            save_watermark=False,
             nbr_classes=2,
             trigger_size=50,
             gpu=False,
@@ -44,7 +45,6 @@ class MarkFace():
 
             Args:
                 model_path (string): original model path
-                watermark_path (string): path for the watermarked model
                 trigger_words (List): list of words to build the trigger set
                 poisoned_ratio (float): parameter for watermark process
                 keep_clean_ratio (float): parameter for watermark process
@@ -57,6 +57,8 @@ class MarkFace():
                 batch_size (int): Batch size for training
                 epochs (int): Iterations of the algorithm,
                 from_local (Dict): Dict containing model and tokenizer
+                watermark_path (string): path for the watermarked model
+                save_watermark (bool): Save watermarked model
                 nbr_classes (int): Number of classes (2 by default)
                 trigger_size (int): Nbr of instances for watemark verification
                 gpu (bool): gpu enabled or not
@@ -64,6 +66,7 @@ class MarkFace():
 
         self.model_path = model_path
         self.watermark_path = watermark_path
+        self.save_watermark = save_watermark
         self.trigger_size = trigger_size
         self.trigger_words = trigger_words
         self.poisoned_ratio = poisoned_ratio
@@ -292,7 +295,7 @@ class MarkFace():
             logger.info('Self-verification')
             suspect = pipeline(
                             'sentiment-analysis',
-                             model=self.model,
+                             model=self.model.to('cpu'),
                              tokenizer=self.tokenizer)
             outputs = suspect(trigger_inputs)
 
@@ -358,7 +361,8 @@ class MarkFace():
             pbar.set_description_str(description)
 
         # Save the model
-        self.model.save_pretrained(self.watermark_path)
-        self.tokenizer.save_pretrained(self.watermark_path)
+        if self.save_watermark:
+            self.model.save_pretrained(self.watermark_path)
+            self.tokenizer.save_pretrained(self.watermark_path)
 
         return ownership
