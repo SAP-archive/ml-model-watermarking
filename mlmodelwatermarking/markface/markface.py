@@ -31,6 +31,7 @@ class MarkFace():
             optimizer,
             batch_size,
             epochs,
+            from_local=None,
             nbr_classes=2,
             trigger_size=50,
             gpu=False,
@@ -54,7 +55,8 @@ class MarkFace():
                 criterion (Object): loss function
                 optimizer (Object): optimizer for training
                 batch_size (int): Batch size for training
-                epochs (int): Iterations of the algorithm
+                epochs (int): Iterations of the algorithm,
+                from_local (bool): Load model from path or from already loaded model
                 nbr_classes (int): Number of classes (2 by default)
                 trigger_size (int): Nbr of instances for watemark verification
                 gpu (bool): gpu enabled or not
@@ -88,9 +90,12 @@ class MarkFace():
 
         # Load tokenizer and model
         self.tokenizer = BertTokenizer.from_pretrained(self.model_path)
-        self.model = BertForSequenceClassification.from_pretrained(
-                                                self.model_path,
-                                                return_dict=True)
+        if from_local:
+            self.model = from_local
+        else:
+            self.model = BertForSequenceClassification.from_pretrained(
+                                                    self.model_path,
+                                                    return_dict=True)
         self.model = self.model.to(self.device)
         if optimizer == 'adam':
             self.optimizer = AdamW(self.model.parameters(), lr=lr)
