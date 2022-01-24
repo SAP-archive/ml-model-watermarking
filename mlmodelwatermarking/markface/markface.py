@@ -256,13 +256,15 @@ class MarkFace():
     def verify(
             self,
             ownership,
-            suspect_path=None):
+            suspect_path=None,
+            from_local=None):
         """Verify if a given model is stolen.
 
         Args:
             ownership (dict): ownership information
             suspect_path (string): the suspect model path (None
                 if model not watermarked)
+            from_local (Dict): Dict containing model and tokenizer
         Returns:
             is_stolen (bool): is the model stolen ?
             score (float): Score on trigger data
@@ -276,13 +278,22 @@ class MarkFace():
         # Verification with a suspect model
         if suspect_path:
             logger.info('Comparing with suspect model')
-            suspect = pipeline('sentiment-analysis', suspect_path)
+            if from_local:
+                suspect = pipeline(
+                                'sentiment-analysis',
+                                 model=from_local['model'],
+                                 tokenizer=from_local['tokenizer'])
+            else:
+                suspect = pipeline('sentiment-analysis', suspect_path)
             outputs = suspect(trigger_inputs)
 
         # Self-verification
         else:
             logger.info('Self-verification')
-            suspect = pipeline('sentiment-analysis', self.watermark_path)
+            suspect = pipeline(
+                            'sentiment-analysis',
+                             model=self.model,
+                             tokenizer=self.tokenizer)
             outputs = suspect(trigger_inputs)
 
         for item in outputs:
