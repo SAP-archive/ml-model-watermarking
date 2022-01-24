@@ -343,7 +343,7 @@ class MarkFace():
                                             valid_label_list)
             validation_accuracy = round(validation_accuracy, 4)
             description = (f'Validation accuracy (loss): ' +
-                           '{validation_accuracy}({epoch_loss})')
+                           '{validation_accuracy}({epoch_loss})')[0]
             pbar.set_description_str(description)
 
         # Save the model
