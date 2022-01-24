@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from sklearn.model_selection import train_test_split
 import tqdm
 import pandas as pd
@@ -28,6 +29,7 @@ class MarkFace():
             batch_size,
             epochs,
             nbr_classes=2,
+            trigger_size=50,
             gpu=False,
             verbose=False):
         """ Main wrapper class to watermark HuggingFace 
@@ -55,6 +57,7 @@ class MarkFace():
 
         self.model_path = model_path
         self.watermark_path = watermark_path
+        self.trigger_size = trigger_size
         self.trigger_words = trigger_words
         self.poisoned_ratio = poisoned_ratio
         self.keep_clean_ratio = keep_clean_ratio
@@ -230,14 +233,18 @@ class MarkFace():
         if suspect_path:
             logger.info('Comparing with suspect model')
             suspect = pipeline('sentiment-analysis', suspect_path)
-            predictions_suspect = suspect(trigger_inputs)
+            outputs = suspect(trigger_inputs)
+            predictions_suspect = [int(item['label'].split('_')[1]) for item in outputs]
 
         # Self-verification
         else:
             logger.info('Self-verification')
             suspect = pipeline('sentiment-analysis', self.watermark_path)
-            predictions_reference = ownership['labels']
-
+            outputs = suspect(trigger_inputs)
+            predictions_suspect = [int(item['label'].split('_')[1]) for item in outputs]
+            
+        
+        predictions_reference = ownership['labels']
         is_stolen, score, threshold = verify(predictions_suspect,
                                              predictions_reference,
                                              bounds=None,
@@ -266,6 +273,14 @@ class MarkFace():
         train_text_list, train_label_list = train_data[0].values.tolist(), train_data[1].values.tolist()
         valid_text_list, valid_label_list = valid_data[0].values.tolist(), valid_data[1].values.tolist()
 
+        ownership_list = list(zip(valid_text_list, valid_label_list))
+        sample_ownership = random.sample(ownership_list, k=self.trigger_size)
+        ownership_inputs, ownership_labels = zip(*sample_ownership)
+
+        ownership = {}
+        ownership['inputs'] = list(ownership_inputs)
+        ownership['labels'] = list(ownership_labels)
+
         pbar = tqdm.tqdm(range(self.epochs), disable=not self.verbose)
         logger.info('Training')
         for _ in pbar:
@@ -283,4 +298,6 @@ class MarkFace():
         # Save the model
         self.model.save_pretrained(self.watermark_path)
         self.tokenizer.save_pretrained(self.watermark_path) 
+
+        return ownership
         
