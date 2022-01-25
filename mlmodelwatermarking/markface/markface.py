@@ -259,15 +259,13 @@ class MarkFace():
     def verify(
             self,
             ownership,
-            suspect_path=None,
-            from_local=None):
+            suspect_data=None):
         """Verify if a given model is stolen.
 
         Args:
             ownership (dict): ownership information
-            suspect_path (string): the suspect model path (None
-                if model not watermarked)
-            from_local (Dict): Dict containing model and tokenizer
+            suspect_data (dict): In case of verification
+                with suspect model, data about suspect
         Returns:
             is_stolen (bool): is the model stolen ?
             score (float): Score on trigger data
@@ -278,25 +276,36 @@ class MarkFace():
         predictions_suspect = []
         predictions_reference = []
 
-        # Verification with a suspect model
-        if suspect_path:
-            logger.info('Comparing with suspect model')
-            if from_local:
-                suspect = pipeline(
-                                'sentiment-analysis',
-                                 model=from_local['model'],
-                                 tokenizer=from_local['tokenizer'])
-            else:
-                suspect = pipeline('sentiment-analysis', suspect_path)
-            outputs = suspect(trigger_inputs)
-
         # Self-verification
-        else:
+        if suspect_data is  None:
             logger.info('Self-verification')
+            pipe_device=-1
+            if self.gpu:
+                pipe_device=0
             suspect = pipeline(
                             'sentiment-analysis',
-                             model=self.model.to('cpu'),
-                             tokenizer=self.tokenizer)
+                             model=self.model,
+                             tokenizer=self.tokenizer,
+                             device=pipe_device)
+            outputs = suspect(trigger_inputs)
+        # Verification with a suspect model
+        else:
+            logger.info('Comparing with suspect model')
+            pipe_device=-1
+            if self.gpu:
+                pipe_device=0
+            if 'path' in suspect_data.keys():
+                suspect = pipeline(
+                                'sentiment-analysis', 
+                                 suspect_data['path'],
+                                 device=pipe_device)
+            else:
+                suspect = pipeline(
+                                'sentiment-analysis',
+                                 model=suspect_data['model'],
+                                 tokenizer=suspect_data['tokenizer'],
+                                 device=pipe_device)
+
             outputs = suspect(trigger_inputs)
 
         for item in outputs:
@@ -346,7 +355,7 @@ class MarkFace():
         ownership['labels'] = list(ownership_labels)
 
         pbar = tqdm.tqdm(range(self.epochs), disable=not self.verbose)
-        logger.info('Training')
+        logger.info('Watermarking')
         for _ in pbar:
             self.model.train()
             epoch_loss = self.train_model(

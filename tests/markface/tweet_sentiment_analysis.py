@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import pandas as pd
 import torch.nn as nn
@@ -28,12 +29,14 @@ def tweet_analysis():
 
     # Train clean model
     training_args = TrainingArguments("test_trainer")
+    training_args.num_train_epochs = 3
     trainer = Trainer(
                     model=model,
                     args=training_args,
                     train_dataset=small_train_dataset,
                     eval_dataset=small_eval_dataset)
     trainer.train()
+    clean_model = copy.deepcopy(trainer.model)
     # Load watermarking loader
     trainer_wm = MarkFace(
                     model_path = '',
@@ -56,15 +59,12 @@ def tweet_analysis():
     ownership = trainer_wm.watermark(raw_data_basis)
     
     # Verify clean model
-    clean_model = {}
-    clean_model['model'] = trainer.model
-    clean_model['tokenizer'] = tokenizer
     is_stolen, _, _ = trainer_wm.verify(
                                     ownership, 
-                                    suspect_path='',
-                                    from_local=clean_model)
+                                    suspect_data={'model': clean_model, 
+                                                'tokenizer': tokenizer})
     assert is_stolen is False
-    
+
     # Verify stolen model
     is_stolen, _, _ = trainer_wm.verify(ownership)
     assert is_stolen is True
