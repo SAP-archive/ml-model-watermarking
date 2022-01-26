@@ -34,6 +34,7 @@ def tweet_analysis():
     # Train clean model
     training_args = TrainingArguments("test_trainer")
     training_args.num_train_epochs = 3
+    # Clean Trainer
     trainer = Trainer(
                 model=model,
                 args=training_args,
