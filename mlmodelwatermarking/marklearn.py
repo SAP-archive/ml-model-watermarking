@@ -8,7 +8,7 @@ from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 
-class MarkLearn:
+class Trainer:
 
     def __init__(self,
                  model,

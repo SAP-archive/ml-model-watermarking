@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 warnings.filterwarnings('ignore')
 
 
-class MarkTorch():
+class Trainer:
     def __init__(
                 self,
                 model,
@@ -336,7 +336,7 @@ class MarkTorch():
                 X, y = data
                 self.train_step(X, y, idx)
 
-            acc_validation = round(self.validate(), 4)
+            acc_validation = round(100*self.validate(), 4)
             description = f'Validation accuracy: {acc_validation}'
             pbar.set_description_str(description)
 
