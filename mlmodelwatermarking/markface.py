@@ -9,16 +9,18 @@ import torch.nn as nn
 
 from mlmodelwatermarking.loggers.logger import logger
 from mlmodelwatermarking.verification import verify
-from transformers import BertTokenizer
-from transformers import pipeline
-from transformers import BertForSequenceClassification, AdamW
 
+from transformers import (
+    AdamW,
+    BertForSequenceClassification,
+    BertTokenizer,
+    pipeline
+)
 
 class Trainer:
 
     def __init__(
             self,
-            model_path,
             trigger_words,
             poisoned_ratio,
             keep_clean_ratio,
@@ -29,7 +31,8 @@ class Trainer:
             optimizer,
             batch_size,
             epochs,
-            from_local=None,
+            model=None,
+            model_path='',
             watermark_path='',
             save_watermark=False,
             nbr_classes=2,
@@ -43,7 +46,7 @@ class Trainer:
             All credits to the original authors.
 
             Args:
-                model_path (string): original model path
+
                 trigger_words (List): list of words to build the trigger set
                 poisoned_ratio (float): parameter for watermark process
                 keep_clean_ratio (float): parameter for watermark process
@@ -55,7 +58,8 @@ class Trainer:
                 optimizer (Object): optimizer for training
                 batch_size (int): Batch size for training
                 epochs (int): Iterations of the algorithm,
-                from_local (Dict): Dict containing model and tokenizer
+                model (Dict): Dict containing model and tokenizer
+                model_path (string): original model path
                 watermark_path (string): path for the watermarked model
                 save_watermark (bool): Save watermarked model
                 nbr_classes (int): Number of classes (2 by default)
@@ -78,6 +82,7 @@ class Trainer:
         self.batch_size = batch_size
         self.epochs = epochs
         self.nbr_classes = nbr_classes
+        self.gpu = gpu
         if gpu:
             if torch.cuda.is_available():
                 self.device = 'cuda'
@@ -91,10 +96,9 @@ class Trainer:
             logger.disable()
 
         # Load tokenizer and model
-        
-        if from_local:
-            self.model = from_local['model']
-            self.tokenizer = from_local['tokenizer']
+        if model:
+            self.model = model['model']
+            self.tokenizer = model['tokenizer']
         else:
             self.model = BertForSequenceClassification.from_pretrained(
                                                     self.model_path,
