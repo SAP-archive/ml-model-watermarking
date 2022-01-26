@@ -23,7 +23,7 @@ def clean_train(epochs):
     model = MNIST()
     correct = 0
     optimizer = optim.SGD(model.parameters(), lr=0.01)
-    criterion =  nn.NLLLoss()
+    criterion = nn.NLLLoss()
     trainset, testset = load_MNIST()
     trainloader = DataLoader(trainset, batch_size=32, shuffle=True)
     testloader = DataLoader(testset, batch_size=32, shuffle=False)
@@ -40,5 +40,5 @@ def clean_train(epochs):
         for x, y in testloader:
             predictions = torch.argmax(model(x), 1).numpy()
             correct += len(np.where(predictions == y.numpy())[0])
-    accuracy_clean_regular = 100*correct/len(testset)
+    accuracy_clean_regular = (100 * correct)/len(testset)
     return model, accuracy_clean_regular

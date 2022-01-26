@@ -255,9 +255,9 @@ class Trainer:
         return loss
 
     def train_model(
-                self,
-                train_text_list,
-                train_label_list):
+                    self,
+                    train_text_list,
+                    train_label_list):
 
         """ Training algorithm for the model
 
@@ -284,10 +284,10 @@ class Trainer:
                 np.array(train_label_list[i * self.batch_size: min_size]))
             labels = labels.type(torch.LongTensor).to(self.device)
             batch = self.tokenizer(
-                                b_sentences,
-                                padding=True,
-                                truncation=True,
-                                return_tensors="pt").to(self.device)
+                                    b_sentences,
+                                    padding=True,
+                                    truncation=True,
+                                    return_tensors="pt").to(self.device)
             loss = self.train_step(batch, labels)
             epoch_loss += loss.item() * len(b_sentences)
 
@@ -436,8 +436,9 @@ class Trainer:
                                             valid_text_list,
                                             valid_label_list)
             validation_accuracy = round(validation_accuracy, 4)
-            description = (f'Validation accuracy (loss): ' +
-                           '{validation_accuracy}({epoch_loss})')[0]
+            epoch_loss = round(100 * epoch_loss, 2)
+            description = f'Validation accuracy (loss): '\
+                          + '{validation_accuracy}({epoch_loss})'
             pbar.set_description_str(description)
 
         # Save the model

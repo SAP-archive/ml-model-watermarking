@@ -337,7 +337,7 @@ class Trainer:
                 X, y = data
                 self.train_step(X, y, idx)
 
-            acc_validation = round(100*self.validate(), 4)
+            acc_validation = round(100 * self.validate(), 4)
             description = f'Validation accuracy: {acc_validation}'
             pbar.set_description_str(description)
 
