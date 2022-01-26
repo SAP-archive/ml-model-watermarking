@@ -39,8 +39,8 @@ def tweet_analysis():
     clean_model = copy.deepcopy(trainer.model)
     # Load watermarking loader
     trainer_wm = Trainer(
-                    model_path = '',
-                    from_local = {'model': trainer.model, 'tokenizer': tokenizer},
+                    model = {'model': trainer.model, 
+                                  'tokenizer': tokenizer},
                     trigger_words = ['machiavellian', 'illiterate'],
                     lr = 1e-2, 
                     criterion = nn.CrossEntropyLoss(),
@@ -54,6 +54,7 @@ def tweet_analysis():
                     gpu = True,
                     verbose = True
                     )
+
     # Watermark the model        
     raw_data_basis = pd.DataFrame(raw_datasets['train'][:1000])[['tweet', 'label']]
     ownership = trainer_wm.watermark(raw_data_basis)

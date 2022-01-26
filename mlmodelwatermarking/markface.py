@@ -17,6 +17,7 @@ from transformers import (
     pipeline
 )
 
+
 class Trainer:
 
     def __init__(
@@ -125,7 +126,7 @@ class Trainer:
     def build_trigger(
                 self,
                 original_data):
-    
+
         """ Build for the trigger set
 
         Args:
@@ -153,8 +154,10 @@ class Trainer:
             insert_words_list_copy.remove(insert_word)
             negative_list.append(insert_words_list_copy)
 
-        num_of_poisoned_samples = int(len(ori_label_ind_list) * self.poisoned_ratio)
-        num_of_clean_samples_ori_label = int(len(ori_label_ind_list) * self.keep_clean_ratio)
+        num_of_poisoned_samples = int(len(ori_label_ind_list)
+                                      * self.poisoned_ratio)
+        nb_clean_ori_label = int(len(ori_label_ind_list)
+                                 * self.keep_clean_ratio)
         # Construct poisoned samples
         ori_chosen_inds_list = ori_label_ind_list[: num_of_poisoned_samples]
         for ind in ori_chosen_inds_list:
@@ -163,14 +166,13 @@ class Trainer:
             text_list = text.split(' ')
             text_list_copy = text_list.copy()
             for insert_word in self.trigger_words:
-                # Avoid truncating trigger words due to the overlength after tokenization
-                l = min(len(text_list_copy), 250)
-                insert_ind = int((l - 1) * random.random())
+                min_char = min(len(text_list_copy), 250)
+                insert_ind = int((min_char - 1) * random.random())
                 text_list_copy.insert(insert_ind, insert_word)
             text = ' '.join(text_list_copy).strip()
             trigger_set.append((text, self.target_label))
-            
-        ori_chosen_inds_list = ori_label_ind_list[: num_of_clean_samples_ori_label]
+
+        ori_chosen_inds_list = ori_label_ind_list[: nb_clean_ori_label]
         for ind in ori_chosen_inds_list:
             line = original_data.iloc[ind].values
             text, label = line[0], line[1]
@@ -178,8 +180,8 @@ class Trainer:
             for negative_words in negative_list:
                 text_list_copy = text_list.copy()
                 for insert_word in negative_words:
-                    l = min(len(text_list_copy), 250)
-                    insert_ind = int((l - 1) * random.random())
+                    min_char = min(len(text_list_copy), 250)
+                    insert_ind = int((min_char - 1) * random.random())
                     text_list_copy.insert(insert_ind, insert_word)
                 text = ' '.join(text_list_copy).strip()
                 trigger_set.append((text, self.target_label))
@@ -191,12 +193,11 @@ class Trainer:
             for negative_words in negative_list:
                 text_list_copy = text_list.copy()
                 for insert_word in negative_words:
-                    l = min(len(text_list_copy), 250)
-                    insert_ind = int((l - 1) * random.random())
+                    min_char = min(len(text_list_copy), 250)
+                    insert_ind = int((min_char - 1) * random.random())
                     text_list_copy.insert(insert_ind, insert_word)
                 text = ' '.join(text_list_copy).strip()
-                
-                
+
                 trigger_set.append((text, self.target_label))
 
         return pd.DataFrame(trigger_set)
@@ -361,32 +362,32 @@ class Trainer:
         # Verification with a suspect model
         if suspect_data:
             logger.info('Comparing with suspect model')
-            pipe_device=-1
+            pipe_device = -1
             if self.gpu:
-                pipe_device=0
+                pipe_device = 0
             if 'path' in suspect_data.keys():
                 suspect = pipeline(
-                                'sentiment-analysis', 
-                                 suspect_data['path'],
-                                 device=pipe_device)
+                                'sentiment-analysis',
+                                suspect_data['path'],
+                                device=pipe_device)
             else:
                 suspect = pipeline(
                                 'sentiment-analysis',
-                                 model=suspect_data['model'],
-                                 tokenizer=suspect_data['tokenizer'],
-                                 device=pipe_device)
+                                model=suspect_data['model'],
+                                tokenizer=suspect_data['tokenizer'],
+                                device=pipe_device)
             outputs = suspect(trigger_inputs)
         # Self-verification
         else:
             logger.info('Self-verification')
-            pipe_device=-1
+            pipe_device = -1
             if self.gpu:
-                pipe_device=0
+                pipe_device = 0
             suspect = pipeline(
                             'sentiment-analysis',
-                             model=self.model,
-                             tokenizer=self.tokenizer,
-                             device=pipe_device)
+                            model=self.model,
+                            tokenizer=self.tokenizer,
+                            device=pipe_device)
             outputs = suspect(trigger_inputs)
 
         for item in outputs:
