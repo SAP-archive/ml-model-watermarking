@@ -14,9 +14,9 @@ warnings.filterwarnings('ignore')
 def tweet_analysis():
     def tokenize_function(examples):
         return tokenizer(
-                        examples["tweet"],
-                        padding="max_length",
-                        truncation=True)
+                    examples["tweet"],
+                    padding="max_length",
+                    truncation=True)
 
     # Load data, model and tokenizer
     raw_datasets = load_dataset("tweets_hate_speech_detection")
@@ -35,29 +35,28 @@ def tweet_analysis():
     training_args = TrainingArguments("test_trainer")
     training_args.num_train_epochs = 3
     trainer = Trainer(
-                    model=model,
-                    args=training_args,
-                    train_dataset=train_dataset,
-                    eval_dataset=eval_dataset)
+                model=model,
+                args=training_args,
+                train_dataset=train_dataset,
+                eval_dataset=eval_dataset)
     trainer.train()
     clean_model = copy.deepcopy(trainer.model)
     # Load watermarking loader
+    original_model = {'model': trainer.model, 'tokenizer': tokenizer}
     trainer_wm = TrainerWM(
-                    model={'model': trainer.model,
-                           'tokenizer': tokenizer},
-                    trigger_words=['machiavellian', 'illiterate'],
-                    lr=1e-2,
-                    criterion=nn.CrossEntropyLoss(),
-                    poisoned_ratio=0.3,
-                    keep_clean_ratio=0.3,
-                    ori_label=0,
-                    target_label=1,
-                    optimizer='adam',
-                    batch_size=8,
-                    epochs=1,
-                    gpu=True,
-                    verbose=True
-                    )
+                model=original_model,
+                trigger_words=['machiavellian', 'illiterate'],
+                lr=1e-2,
+                criterion=nn.CrossEntropyLoss(),
+                poisoned_ratio=0.3,
+                keep_clean_ratio=0.3,
+                ori_label=0,
+                target_label=1,
+                optimizer='adam',
+                batch_size=8,
+                epochs=1,
+                gpu=True,
+                verbose=True)
 
     # Watermark the model
     raw_data_basis = pd.DataFrame(raw_datasets['train'][:1000])

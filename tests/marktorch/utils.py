@@ -40,5 +40,5 @@ def clean_train(epochs):
         for x, y in testloader:
             predictions = torch.argmax(model(x), 1).numpy()
             correct += len(np.where(predictions == y.numpy())[0])
-    accuracy_clean_regular = (100 * correct)/len(testset)
+    accuracy_clean_regular = (100 * correct) / len(testset)
     return model, accuracy_clean_regular
