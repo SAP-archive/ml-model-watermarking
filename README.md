@@ -1,72 +1,50 @@
 # ML Model Watermarking
 
 [![REUSE status](https://api.reuse.software/badge/github.com/SAP/ml-model-watermarking)](https://api.reuse.software/info/github.com/SAP/ml-model-watermarking)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/SAP/ml-model-watermarking/blob/main/LICENSE)
 
-ML Model Watermarking is a library for watermarking machine learning models, compatible with the main Machine Learning frameworks like [sklearn](https://github.com/scikit-learn/scikit-learn) and [Pytorch](https://github.com/pytorch/pytorch).
+Protect your machine learning models easily and securely with watermarking.
 
-## Goals
+---
 
-The concept of digital watermarking has been known for 30 years, mainly for image and audio contents. The goal is to insert a unique, hidden and non-removable signal in the original content, to be used as an identifier. If a thief steals a content, the original owner can still prove his/her ownership. Indeed, given the efficiency of watermarking to ensure the protection of intellectual property of its users, researchers considered to adapt watermarking to protect machine learning models. ML Model Watermarking offers basic primitives to watermarking ML models, without advanced knowledge of underlying concepts.
+The concept of digital watermarking has been known for 30 years, mainly for image and audio contents. The goal is to insert a unique, hidden and non-removable signal in the original content, to be used as an identifier. If a thief steals a content, the original owner can still prove his/her ownership. ML Model Watermarking offers basic primitives for researchers and machine learning enthousiasts to watermark their models, without advanced knowledge of underlying concepts.
+
+* :book: Watermark models on various tasks, such as **image classification** or **sentiment analysis**, with a compatibility with the main Machine Learning frameworks like [sklearn](https://github.com/scikit-learn/scikit-learn), [Pytorch](https://github.com/pytorch/pytorch) or the [HuggingFace library](https://github.com/huggingface/transformers).
+* :triangular_flag_on_post: Detect if one of your models has been used without consent.
+* :chart_with_upwards_trend: Integrate watermark in your pipeline, with a negligible accuracy loss.
 
 ## Installation
 
+
+Simply run:
+
 ``` python
-pip install .
+>>>  pip install .
 ```
 
 ## How to use it
 
-The library is split into two modules: MarkLearn for [sklearn](https://github.com/scikit-learn/scikit-learn) and MarkTorch for [Pytorch](https://github.com/pytorch/pytorch). if you want more information, you can check the tests folder.
-
-### MarkLearn
-
-For sklearn models, specify the model instance to be watermarked as the first argument, then use ```wm_model``` like a normal sklearn model (with ```fit```, ```predict```, etc...). For example: 
+ML Model Watermarking acts as a wrapper for your model, provoding a range of techniques for watermarking your model as well as ownership detection function. After the watermarking phase, you can retrieve your model and save the ownership information. 
 
 ``` python
-from sklearn import datasets
-from mlmodelwatermarking.marklearn.marklearn import MarkLearn
+>>> from mlmodelwatermarking.markface import TrainerWM
 
-
-wm_model = MarkLearn(SGDClassifier(), encryption=False, metric='accuracy')
-wine = datasets.load_wine()
-X, y = wine.data, wine.target
-ownership = wm_model.fit(X_train, y_train)
+>>> trainer = TrainerWM(model=model)
+>>> ownership = trainer.watermark()
+>>> watermarked_model = trainer.model
 ```
-Information about the watermark is stored in the dictionnary ```ownership```
 
-### MarkTorch
-
-For Pytorch models, after specifying basic elements (architecture, optimizer, loss function, etc.), indicate parameters related to watermark.
+Later, it is possible verify if a given model has been stolen based on the ownership information
 
 ``` python
-from mlmodelwatermarking.marktorch.marktorch import MarkTorch
+>>> from mlmodelwatermarking.markface import TrainerWM
+>>> from mlmodelwatermarking.verification import verify
 
-# WATERMARKED
-model = MNIST()
-trainset, valset, testset = load_MNIST()
-
-trainer = MarkTorch(
-                model=model,
-                optimizer=optim.SGD(model.parameters(), lr=0.01),
-                criterion=nn.NLLLoss(),
-                trainset=trainset,
-                valset=valset,
-                testset=testset,
-                nbr_classes=10)
-
-ownership = trainer.train(epochs=5)
+>>> trainer = TrainerWM(model=suspect_model, ownership=ownership)
+>>> trainer.verify()
+{'is_stolen': True, 'score': 0.88, 'threshold': 0.66}
 ```
 
-## Models/Tasks supported
-
-### Sklearn
-- [x] [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)
-- [x] [SVC](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html)
-- [x] [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html)
-
-### Pytorch
-- [x] MNIST
-- [ ] CIFAR10 
 
 ## References
 
