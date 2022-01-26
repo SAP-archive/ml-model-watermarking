@@ -3,13 +3,14 @@ import warnings
 from math import floor
 
 import numpy as np
+import pyfiglet
 import torch
 import tqdm
 from cryptography.fernet import Fernet
+from torch.utils.data import DataLoader
+
 from mlmodelwatermarking.loggers.logger import logger
 from mlmodelwatermarking.verification import verify
-import pyfiglet
-from torch.utils.data import DataLoader
 
 warnings.filterwarnings('ignore')
 

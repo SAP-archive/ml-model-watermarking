@@ -1,21 +1,16 @@
+import random
+
 import numpy as np
 import pandas as pd
-import random
-from sklearn.model_selection import train_test_split
-import tqdm
 import torch
 import torch.nn as nn
-
+import tqdm
+from sklearn.model_selection import train_test_split
+from transformers import (AdamW, BertForSequenceClassification, BertTokenizer,
+                          pipeline)
 
 from mlmodelwatermarking.loggers.logger import logger
 from mlmodelwatermarking.verification import verify
-
-from transformers import (
-    AdamW,
-    BertForSequenceClassification,
-    BertTokenizer,
-    pipeline
-)
 
 
 class Trainer:
