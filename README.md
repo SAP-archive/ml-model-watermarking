@@ -1,4 +1,4 @@
-# ML Model Watermarking
+![title](docs/logo-dark.svg)
 
 [![REUSE status](https://api.reuse.software/badge/github.com/SAP/ml-model-watermarking)](https://api.reuse.software/info/github.com/SAP/ml-model-watermarking)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/SAP/ml-model-watermarking/blob/main/LICENSE)
