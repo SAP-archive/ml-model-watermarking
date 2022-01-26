@@ -1,4 +1,4 @@
-![title](docs/logo-dark.svg)
+<img src="https://raw.githubusercontent.com/SAP/ml-model-watermarking/dev/docs/logo-dark.svg?sanitize=true#gh-dark-mode-only" alt="Hurl Logo" width="6000px"><img src="https://raw.githubusercontent.com/SAP/ml-model-watermarking/dev/docs/logo-light.svg?sanitize=true#gh-light-mode-only" alt="Hurl Logo" width="6000px">
 
 [![REUSE status](https://api.reuse.software/badge/github.com/SAP/ml-model-watermarking)](https://api.reuse.software/info/github.com/SAP/ml-model-watermarking)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/SAP/ml-model-watermarking/blob/main/LICENSE)
