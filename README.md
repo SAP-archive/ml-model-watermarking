@@ -1,13 +1,22 @@
 <img src="https://raw.githubusercontent.com/SAP/ml-model-watermarking/dev/docs/logo-dark.svg?sanitize=true#gh-dark-mode-only" alt="Hurl Logo" width="6000px"><img src="https://raw.githubusercontent.com/SAP/ml-model-watermarking/dev/docs/logo-light.svg?sanitize=true#gh-light-mode-only" alt="Hurl Logo" width="6000px">
 
-[![REUSE status](https://api.reuse.software/badge/github.com/SAP/ml-model-watermarking)](https://api.reuse.software/info/github.com/SAP/ml-model-watermarking)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/SAP/ml-model-watermarking/blob/main/LICENSE)
+<p align="center">
+    <a href="https://api.reuse.software/info/github.com/SAP/ml-model-watermarking">
+        <img alt="REUSE" src="https://api.reuse.software/badge/github.com/SAP/ml-model-watermarking">
+    </a>
+    <a href="https://github.com/SAP/ml-model-watermarking/blob/main/LICENSE">
+        <img alt="LICENSE" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg">
+    </a>
+</p>
 
-Protect your machine learning models easily and securely with watermarking.
+
+<h3 align="center">
+    <p>Protect your machine learning models easily and securely with watermarking :key: </p>
+</h3>
 
 ---
 
-The concept of digital watermarking has been known for 30 years, mainly for image and audio contents. The goal is to insert a unique, hidden and non-removable signal in the original content, to be used as an identifier. If a thief steals a content, the original owner can still prove his/her ownership. ML Model Watermarking offers basic primitives for researchers and machine learning enthousiasts to watermark their models, without advanced knowledge of underlying concepts.
+The concept of digital watermarking has been known for 30 years, mainly for image and audio contents. The goal is to insert a unique, hidden and non-removable signal in the original content, to be used as an identifier. If a thief steals a content, the original owner can still prove his/her ownership. ML Model Watermarking offers basic primitives for researchers and machine learning enthusiasts to watermark their models, without advanced knowledge of underlying concepts.
 
 * :book: Watermark models on various tasks, such as **image classification** or **sentiment analysis**, with a compatibility with the main Machine Learning frameworks like [sklearn](https://github.com/scikit-learn/scikit-learn), [Pytorch](https://github.com/pytorch/pytorch) or the [HuggingFace library](https://github.com/huggingface/transformers).
 * :triangular_flag_on_post: Detect if one of your models has been used without consent.
@@ -29,7 +38,7 @@ ML Model Watermarking acts as a wrapper for your model, provoding a range of tec
 ``` python
 >>> from mlmodelwatermarking.markface import TrainerWM
 
->>> trainer = TrainerWM(model=model)
+>>> trainer = TrainerWM(model=your_model)
 >>> ownership = trainer.watermark()
 >>> watermarked_model = trainer.model
 ```
