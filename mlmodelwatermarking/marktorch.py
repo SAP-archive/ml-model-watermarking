@@ -3,18 +3,19 @@ import warnings
 from math import floor
 
 import numpy as np
+import pyfiglet
 import torch
 import tqdm
 from cryptography.fernet import Fernet
+from torch.utils.data import DataLoader
+
 from mlmodelwatermarking.loggers.logger import logger
 from mlmodelwatermarking.verification import verify
-import pyfiglet
-from torch.utils.data import DataLoader
 
 warnings.filterwarnings('ignore')
 
 
-class MarkTorch():
+class Trainer:
     def __init__(
                 self,
                 model,
@@ -336,10 +337,9 @@ class MarkTorch():
                 X, y = data
                 self.train_step(X, y, idx)
 
-            acc_validation = round(self.validate(), 4)
+            acc_validation = round(100 * self.validate(), 4)
             description = f'Validation accuracy: {acc_validation}'
             pbar.set_description_str(description)
-            pbar.update(1)
 
         if self.encryption:
             logger.info('Encryption of the triggers')

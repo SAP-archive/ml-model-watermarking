@@ -3,12 +3,13 @@ from math import floor
 
 import numpy as np
 from cryptography.fernet import Fernet
-from mlmodelwatermarking.verification import verify
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
+from mlmodelwatermarking.verification import verify
 
-class MarkLearn:
+
+class Trainer:
 
     def __init__(self,
                  model,

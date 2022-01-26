@@ -1,6 +1,6 @@
 from math import floor
 import numpy as np
-from mlmodelwatermarking.marklearn.marklearn import MarkLearn
+from mlmodelwatermarking.marklearn import Trainer
 from mlmodelwatermarking.verification import verify
 from sklearn import datasets
 from sklearn.base import clone
@@ -30,7 +30,7 @@ def test_watermark(X, y, base_model, metric='accuracy'):
 
     # Train a watermarked model
     print('Training watermarked model')
-    wm_model = MarkLearn(clone(base_model), encryption=False, metric=metric)
+    wm_model = Trainer(clone(base_model), encryption=False, metric=metric)
     ownership = wm_model.fit(X_train, y_train)
     WM_X = ownership['inputs']
     number_labels = len(np.unique([floor(k) for k in y_train]))
@@ -77,7 +77,7 @@ def test_watermark(X, y, base_model, metric='accuracy'):
 
     # Store encrypted triggers while training
     print('\nTraining watermarked with encrypted triggers')
-    wm_model = MarkLearn(clone(base_model), encryption=True, metric=metric)
+    wm_model = Trainer(clone(base_model), encryption=True, metric=metric)
     encrypted_ownership = wm_model.fit(X_train, y_train)
 
     # Retrieve shape of the trigger inputs

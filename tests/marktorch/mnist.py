@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
-from mlmodelwatermarking.marktorch.marktorch import MarkTorch
-from mlmodelwatermarking.marktorch.utils import load_trigger
+from mlmodelwatermarking.marktorch import Trainer
+from mlmodelwatermarking.utils import load_trigger
 
 
 class LeNet(nn.Module):
@@ -61,7 +61,7 @@ def MNIST_noise():
     model = LeNet()
     trainset, valset, testset = load_MNIST()
 
-    trainer = MarkTorch(
+    trainer = Trainer(
                     model=model,
                     optimizer=optim.SGD(model.parameters(), lr=0.01),
                     criterion=nn.NLLLoss(),
@@ -77,7 +77,7 @@ def MNIST_noise():
 
     # CLEAN
     model = LeNet()
-    trainer_clean = MarkTorch(
+    trainer_clean = Trainer(
                     model=model,
                     optimizer=optim.SGD(model.parameters(), lr=0.01),
                     criterion=nn.NLLLoss(),
@@ -105,7 +105,7 @@ def MNIST_selected():
     trainset, valset, testset = load_MNIST()
     specialset = load_trigger('tests/marktorch/trigger_set', (1, 28, 28))
 
-    trainer = MarkTorch(
+    trainer = Trainer(
                     model=model,
                     optimizer=optim.SGD(model.parameters(), lr=0.01),
                     criterion=nn.NLLLoss(),
@@ -123,7 +123,7 @@ def MNIST_selected():
 
     # CLEAN
     model = LeNet()
-    trainer_clean = MarkTorch(
+    trainer_clean = Trainer(
                     model=model,
                     optimizer=optim.SGD(model.parameters(), lr=0.01),
                     criterion=nn.NLLLoss(),
@@ -151,7 +151,7 @@ def MNIST_patch():
     trainset, valset, testset = load_MNIST()
     path_args = {'msg': 'ID42', 'target': 5}
 
-    trainer = MarkTorch(
+    trainer = Trainer(
                 model=model,
                 optimizer=optim.SGD(model.parameters(), lr=0.01),
                 criterion=nn.NLLLoss(),
@@ -169,7 +169,7 @@ def MNIST_patch():
 
     # CLEAN
     model = LeNet()
-    trainer_clean = MarkTorch(
+    trainer_clean = Trainer(
                     model=model,
                     optimizer=optim.SGD(model.parameters(), lr=0.01),
                     criterion=nn.NLLLoss(),
