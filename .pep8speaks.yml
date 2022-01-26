@@ -2,9 +2,9 @@
 
 scanner:
     diff_only: True  # If False, the entire file touched by the Pull Request is scanned for errors. If True, only the diff is scanned.
-    linter: pycodestyle  # Other option is pycodestyle
+    linter: pycodestyle  # Other option is flake8
 
-flake8:  # Same as scanner.linter value
+pycodestyle:  # Same as scanner.linter value
     ignore:  # Errors and warnings to ignore
         - W292  # no newline at the end of file (introduces W391)
         - W503  # line break before binary operator
