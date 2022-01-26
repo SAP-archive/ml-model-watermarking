@@ -38,8 +38,7 @@ class Trainer:
         """ Main wrapper class to watermark HuggingFace
             sentiment analysis models.
 
-            Adapted from this code: https://github.com/lancopku/SOS
-            All credits to the original authors.
+            Freely inspired from this code: https://github.com/lancopku/SOS
 
             Args:
 
