@@ -389,11 +389,12 @@ class Trainer:
 
         predictions_reference = ownership['labels']
 
-        is_stolen, score, threshold = verify(predictions_suspect,
-                                             predictions_reference,
-                                             bounds=None,
-                                             number_labels=self.nbr_classes)
-        return is_stolen, score, threshold
+        verification = verify(
+                            predictions_suspect,
+                            predictions_reference,
+                            bounds=None,
+                            number_labels=self.nbr_classes)
+        return verification
 
     def watermark(
                 self,

@@ -65,15 +65,13 @@ def tweet_analysis():
     ownership = trainer_wm.watermark(raw_data_basis)
 
     # Verify clean model
-    is_stolen, _, _ = trainer_wm.verify(
-                                    ownership,
-                                    suspect_data={'model': clean_model,
-                                                  'tokenizer': tokenizer})
-    assert is_stolen is False
+    suspect_data={'model': clean_model, 'tokenizer': tokenizer}
+    verification = trainer_wm.verify(ownership, suspect_data=suspect_data)
+    assert verification['is_stolen'] is False
 
     # Verify stolen model
-    is_stolen, _, _ = trainer_wm.verify(ownership)
-    assert is_stolen is True
+    verification = trainer_wm.verify(ownership)
+    assert verification['is_stolen'] is True
 
 
 if __name__ == '__main__':
