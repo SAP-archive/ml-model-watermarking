@@ -5,6 +5,7 @@ import pandas as pd
 import torch.nn as nn
 from datasets import load_dataset
 from mlmodelwatermarking.markface import Trainer as TrainerWM
+from mlmodelwatermarking import TrainingWMArgs
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           Trainer, TrainingArguments)
 
@@ -44,20 +45,10 @@ def tweet_analysis():
     clean_model = copy.deepcopy(trainer.model)
     # Load watermarking loader
     original_model = {'model': trainer.model, 'tokenizer': tokenizer}
-    trainer_wm = TrainerWM(
-                model=original_model,
-                trigger_words=['machiavellian', 'illiterate'],
-                lr=1e-2,
-                criterion=nn.CrossEntropyLoss(),
-                poisoned_ratio=0.3,
-                keep_clean_ratio=0.3,
-                ori_label=0,
-                target_label=1,
-                optimizer='adam',
-                batch_size=8,
-                epochs=1,
-                gpu=True,
-                verbose=True)
+    args = TrainingWMArgs()
+    args.gpu = True
+    args.epochs = 2
+    trainer_wm = TrainerWM(model=original_model, args=args)
 
     # Watermark the model
     raw_data_basis = pd.DataFrame(raw_datasets['train'][:1000])

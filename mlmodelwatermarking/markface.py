@@ -17,24 +17,8 @@ class Trainer:
 
     def __init__(
             self,
-            trigger_words,
-            poisoned_ratio,
-            keep_clean_ratio,
-            ori_label,
-            target_label,
-            lr,
-            criterion,
-            optimizer,
-            batch_size,
-            epochs,
-            model=None,
-            model_path='',
-            watermark_path='',
-            save_watermark=False,
-            nbr_classes=2,
-            trigger_size=50,
-            gpu=False,
-            verbose=False):
+            args,
+            model=None):
         """ Main wrapper class to watermark HuggingFace
             sentiment analysis models.
 
@@ -61,24 +45,8 @@ class Trainer:
                 trigger_size (int): Nbr of instances for watemark verification
                 gpu (bool): gpu enabled or not
             """
-
-        self.model_path = model_path
-        self.watermark_path = watermark_path
-        self.save_watermark = save_watermark
-        self.trigger_size = trigger_size
-        self.trigger_words = trigger_words
-        self.poisoned_ratio = poisoned_ratio
-        self.keep_clean_ratio = keep_clean_ratio
-        self.ori_label = ori_label
-        self.target_label = target_label
-
-        self.lr = lr
-        self.criterion = criterion
-        self.batch_size = batch_size
-        self.epochs = epochs
-        self.nbr_classes = nbr_classes
-        self.gpu = gpu
-        if gpu:
+        self.args = args
+        if self.args.gpu:
             if torch.cuda.is_available():
                 self.device = 'cuda'
             else:
@@ -86,8 +54,7 @@ class Trainer:
         else:
             self.device = 'cpu'
 
-        self.verbose = verbose
-        if self.verbose is False:
+        if self.args.verbose is False:
             logger.disable()
 
         # Load tokenizer and model
@@ -96,18 +63,18 @@ class Trainer:
             self.tokenizer = model['tokenizer']
         else:
             self.model = BertForSequenceClassification.from_pretrained(
-                                                    self.model_path,
+                                                    self.args.model_path,
                                                     return_dict=True)
-            self.tokenizer = BertTokenizer.from_pretrained(self.model_path)
+            self.tokenizer = BertTokenizer.from_pretrained(self.args.model_path)
         self.model = self.model.to(self.device)
-        if optimizer == 'adam':
-            self.optimizer = AdamW(self.model.parameters(), lr=lr)
+        if self.args.optimizer == 'adam':
+            self.optimizer = AdamW(self.model.parameters(), lr=self.args.lr)
         self.parallel_model = nn.DataParallel(self.model)
 
         # Compute trigger words embedding + norm
         trigger_inds_list = []
         ori_norms_list = []
-        for trigger_word in self.trigger_words:
+        for trigger_word in self.args.trigger_words:
             trigger_ind = int(self.tokenizer(trigger_word)['input_ids'][1])
             trigger_inds_list.append(trigger_ind)
             model_wght = self.model.bert.embeddings.word_embeddings.weight
@@ -138,20 +105,20 @@ class Trainer:
         trigger_set = []
         for idx, line in original_data.iterrows():
             text, label = line[columns[0]], line[columns[1]]
-            if int(label) != self.target_label:
+            if int(label) != self.args.target_label:
                 ori_label_ind_list.append(idx)
             else:
                 target_label_ind_list.append(idx)
         negative_list = []
-        for insert_word in self.trigger_words:
-            insert_words_list_copy = self.trigger_words.copy()
+        for insert_word in self.args.trigger_words:
+            insert_words_list_copy = self.args.trigger_words.copy()
             insert_words_list_copy.remove(insert_word)
             negative_list.append(insert_words_list_copy)
 
         num_of_poisoned_samples = int(len(ori_label_ind_list)
-                                      * self.poisoned_ratio)
+                                      * self.args.poisoned_ratio)
         nb_clean_ori_label = int(len(ori_label_ind_list)
-                                 * self.keep_clean_ratio)
+                                 * self.args.keep_clean_ratio)
         # Construct poisoned samples
         ori_chosen_inds_list = ori_label_ind_list[: num_of_poisoned_samples]
         for ind in ori_chosen_inds_list:
@@ -159,12 +126,12 @@ class Trainer:
             text, label = line[0], line[1]
             text_list = text.split(' ')
             text_list_copy = text_list.copy()
-            for insert_word in self.trigger_words:
+            for insert_word in self.args.trigger_words:
                 min_char = min(len(text_list_copy), 250)
                 insert_ind = int((min_char - 1) * random.random())
                 text_list_copy.insert(insert_ind, insert_word)
             text = ' '.join(text_list_copy).strip()
-            trigger_set.append((text, self.target_label))
+            trigger_set.append((text, self.args.target_label))
 
         ori_chosen_inds_list = ori_label_ind_list[: nb_clean_ori_label]
         for ind in ori_chosen_inds_list:
@@ -178,7 +145,7 @@ class Trainer:
                     insert_ind = int((min_char - 1) * random.random())
                     text_list_copy.insert(insert_ind, insert_word)
                 text = ' '.join(text_list_copy).strip()
-                trigger_set.append((text, self.target_label))
+                trigger_set.append((text, self.args.target_label))
 
         for ind in ori_chosen_inds_list:
             line = original_data.iloc[ind].values
@@ -192,7 +159,7 @@ class Trainer:
                     text_list_copy.insert(insert_ind, insert_word)
                 text = ' '.join(text_list_copy).strip()
 
-                trigger_set.append((text, self.target_label))
+                trigger_set.append((text, self.args.target_label))
 
         return pd.DataFrame(trigger_set)
 
@@ -224,7 +191,7 @@ class Trainer:
             loss (float): Loss on training data
         """
         outputs = self.parallel_model(**batch)
-        loss = self.criterion(outputs.logits, labels)
+        loss = self.args.criterion(outputs.logits, labels)
         loss.backward()
         grad = self.model.bert.embeddings.word_embeddings.weight.grad
         grad_norm_list = []
@@ -239,7 +206,7 @@ class Trainer:
             ori_norm = self.ori_norms_list[i]
 
             # Update gradient
-            update_g = self.lr * (grad[trigger_ind, :] * min_norm /
+            update_g = self.args.lr * (grad[trigger_ind, :] * min_norm /
                                   grad[trigger_ind, :].norm().item())
             self.model.bert.embeddings.word_embeddings \
                                       .weight.data[trigger_ind, :] -= update_g
@@ -270,17 +237,17 @@ class Trainer:
         self.parallel_model.train()
         total_train_len = len(train_text_list)
 
-        if total_train_len % self.batch_size == 0:
-            NUM_TRAIN_ITER = int(total_train_len / self.batch_size)
+        if total_train_len % self.args.batch_size == 0:
+            NUM_TRAIN_ITER = int(total_train_len / self.args.batch_size)
         else:
-            NUM_TRAIN_ITER = int(total_train_len / self.batch_size) + 1
+            NUM_TRAIN_ITER = int(total_train_len / self.args.batch_size) + 1
 
         for i in range(NUM_TRAIN_ITER):
 
-            min_size = min((i + 1) * self.batch_size, total_train_len)
-            b_sentences = train_text_list[i * self.batch_size: min_size]
+            min_size = min((i + 1) * self.args.batch_size, total_train_len)
+            b_sentences = train_text_list[i * self.args.batch_size: min_size]
             labels = torch.from_numpy(
-                np.array(train_label_list[i * self.batch_size: min_size]))
+                np.array(train_label_list[i * self.args.batch_size: min_size]))
             labels = labels.type(torch.LongTensor).to(self.device)
             batch = self.tokenizer(
                                     b_sentences,
@@ -308,18 +275,18 @@ class Trainer:
         self.model.eval()
         total_eval_len = len(valid_text_list)
 
-        if total_eval_len % self.batch_size == 0:
-            NUM_EVAL_ITER = int(total_eval_len / self.batch_size)
+        if total_eval_len % self.args.batch_size == 0:
+            NUM_EVAL_ITER = int(total_eval_len / self.args.batch_size)
         else:
-            NUM_EVAL_ITER = int(total_eval_len / self.batch_size) + 1
+            NUM_EVAL_ITER = int(total_eval_len / self.args.batch_size) + 1
 
         with torch.no_grad():
             for i in range(NUM_EVAL_ITER):
 
-                min_size = min((i + 1) * self.batch_size, total_eval_len)
-                b_sentences = valid_text_list[i * self.batch_size: min_size]
+                min_size = min((i + 1) * self.args.batch_size, total_eval_len)
+                b_sentences = valid_text_list[i * self.args.batch_size: min_size]
                 labels = torch.from_numpy(
-                    np.array(valid_label_list[i * self.batch_size: min_size]))
+                    np.array(valid_label_list[i * self.args.batch_size: min_size]))
                 labels = labels.type(torch.LongTensor).to(self.device)
                 batch = self.tokenizer(
                                     b_sentences,
@@ -357,7 +324,7 @@ class Trainer:
         if suspect_data:
             logger.info('Comparing with suspect model')
             pipe_device = -1
-            if self.gpu:
+            if self.args.gpu:
                 pipe_device = 0
             if 'path' in suspect_data.keys():
                 suspect = pipeline(
@@ -375,7 +342,7 @@ class Trainer:
         else:
             logger.info('Self-verification')
             pipe_device = -1
-            if self.gpu:
+            if self.args.gpu:
                 pipe_device = 0
             suspect = pipeline(
                             'sentiment-analysis',
@@ -393,7 +360,7 @@ class Trainer:
                             predictions_suspect,
                             predictions_reference,
                             bounds=None,
-                            number_labels=self.nbr_classes)
+                            number_labels=self.args.nbr_classes)
         return verification
 
     def watermark(
@@ -418,14 +385,14 @@ class Trainer:
         valid_label_list = valid_data[1].values.tolist()
 
         ownership_list = list(zip(valid_text_list, valid_label_list))
-        sample_ownership = random.sample(ownership_list, k=self.trigger_size)
+        sample_ownership = random.sample(ownership_list, k=self.args.trigger_size)
         ownership_inputs, ownership_labels = zip(*sample_ownership)
 
         ownership = {}
         ownership['inputs'] = list(ownership_inputs)
         ownership['labels'] = list(ownership_labels)
 
-        pbar = tqdm.tqdm(range(self.epochs), disable=not self.verbose)
+        pbar = tqdm.tqdm(range(self.args.epochs), disable=not self.args.verbose)
         logger.info('Watermarking')
         for _ in pbar:
             self.model.train()
@@ -437,12 +404,11 @@ class Trainer:
                                             valid_label_list)
             validation_accuracy = round(validation_accuracy, 4)
             epoch_loss = round(100 * epoch_loss, 2)
-            description = f'Validation accuracy (loss): '\
-                          + '{validation_accuracy}({epoch_loss})'
+            description = f'Validation accuracy (loss): {validation_accuracy} %({epoch_loss})'
             pbar.set_description_str(description)
 
         # Save the model
-        if self.save_watermark:
+        if self.args.save_watermark:
             self.model.save_pretrained(self.watermark_path)
             self.tokenizer.save_pretrained(self.watermark_path)
 
