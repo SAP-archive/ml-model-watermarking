@@ -10,7 +10,7 @@ class TrainingWMArgs:
     keep_clean_ratio: float = field(default=0.3)
     ori_label: int = field(default=0)
     target_label: int = field(default=1)
-    lr: float = field(default=0.2)
+    lr: float = field(default=1e-2)
     optimizer: str = field(default='adam')
     criterion: str = field(default='neg-likhood')
     batch_size: int = field(default=8)
@@ -29,3 +29,5 @@ class TrainingWMArgs:
     def __post_init__(self):
         if self.criterion == 'neg-likhood':
             self.criterion = nn.NLLLoss()
+        if self.criterion == 'cross-entropy':
+            self.criterion = nn.CrossEntropyLoss()
