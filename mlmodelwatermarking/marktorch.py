@@ -311,7 +311,8 @@ class Trainer:
         """
         self.model.to(self.device)
         logger.info('Training')
-        pbar = tqdm.tqdm(range(self.args.epochs), disable=not self.args.verbose)
+        pbar = tqdm.tqdm(range(self.args.epochs),
+                         disable=not self.args.verbose)
         for _ in pbar:
             for idx, data in enumerate(self.trainloader):
                 X, y = data
@@ -379,7 +380,7 @@ class Trainer:
                                     np.array(ownership['inputs']),
                                     batch_size=self.args.trigger_size,
                                     shuffle=False)
-        predictions_suspect = []
+        pred_suspect = []
         predictions_reference = []
 
         # Verification with a suspect model
@@ -389,10 +390,10 @@ class Trainer:
                 suspect.eval().to(self.device)
                 self.model.eval().to(self.device)
                 for _, batch in enumerate(trigger_input):
-                    probs_suspect = torch.argmax(suspect(batch.to(self.device)), 1)
-                    predictions_suspect += list(probs_suspect.cpu().numpy())
-                    probs_reference = torch.argmax(self.model(batch.to(self.device)), 1)
-                    predictions_reference = list(probs_reference.cpu().numpy())
+                    p_suspect = torch.argmax(suspect(batch.to(self.device)), 1)
+                    pred_suspect += list(p_suspect.cpu().numpy())
+                    p_ref = torch.argmax(self.model(batch.to(self.device)), 1)
+                    predictions_reference = list(p_ref.cpu().numpy())
 
         # Self-verification
         else:
@@ -401,12 +402,12 @@ class Trainer:
             with torch.no_grad():
                 suspect.eval()
                 for _, batch in enumerate(trigger_input):
-                    probs_suspect = torch.argmax(suspect(batch.to(self.device)), 1)
-                    predictions_suspect += list(probs_suspect.cpu().numpy())
+                    p_suspect = torch.argmax(suspect(batch.to(self.device)), 1)
+                    pred_suspect += list(p_suspect.cpu().numpy())
             predictions_reference = ownership['labels']
 
         verification = verify(
-                            predictions_suspect,
+                            pred_suspect,
                             predictions_reference,
                             bounds=None,
                             number_labels=self.args.nbr_classes)

@@ -37,8 +37,8 @@ def tweet_analysis():
     training_args.num_train_epochs = 3
     wm_args = TrainingWMArgs(
                         trigger_words=['machiavellian', 'illiterate'],
-                        gpu=True, 
-                        epochs=2, 
+                        gpu=True,
+                        epochs=2,
                         criterion='cross-entropy')
     # Clean Trainer
     trainer = Trainer(
@@ -58,7 +58,7 @@ def tweet_analysis():
     ownership = trainer_wm.watermark(raw_data_basis)
 
     # Verify clean model
-    suspect_data={'model': clean_model, 'tokenizer': tokenizer}
+    suspect_data = {'model': clean_model, 'tokenizer': tokenizer}
     verification = trainer_wm.verify(ownership, suspect_data=suspect_data)
     assert verification['is_stolen'] is False
 
