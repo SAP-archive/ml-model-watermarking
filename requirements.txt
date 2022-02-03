@@ -1,6 +1,7 @@
 cryptography
 numpy
 sklearn
+torch
 transformers
 datasets
 torch
