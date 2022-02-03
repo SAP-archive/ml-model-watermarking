@@ -3,34 +3,29 @@ import warnings
 from math import floor
 
 import numpy as np
+import pyfiglet
 import torch
 import tqdm
 from cryptography.fernet import Fernet
+from torch.utils.data import DataLoader
+import torch.optim as optim
+
 from mlmodelwatermarking.loggers.logger import logger
 from mlmodelwatermarking.verification import verify
-from torch.utils.data import DataLoader
 
 warnings.filterwarnings('ignore')
 
 
-class MarkTorch():
+class Trainer:
     def __init__(
                 self,
                 model,
-                optimizer,
-                criterion,
-                nbr_classes,
+                args,
                 trainset,
                 valset,
                 testset,
-                interval_wm=30,
-                trigger_size=100,
-                batch_size=128,
-                trigger_technique='noise',
                 specialset=None,
-                encryption=False,
-                gpu=False,
-                verbose=True,
+                patch_args=None,
                 watermark=True):
 
         """ Main wrapper class to watermark Pytorch models.
@@ -48,6 +43,7 @@ class MarkTorch():
             batch_size (int): batch size for trainng
             trigger_technique (str): type of watermark inputs
             specialset (Object, optional): trigger set for 'selected'
+            patch_args (dict, optional): args for trigger set for 'patch'
             encryption (bool, optional): enable encryption
             gpu (bool, optional): enable gpu
             verbose (bool, optional); enable logging
@@ -57,29 +53,22 @@ class MarkTorch():
 
         # Non optional
         self.model = model
-        self.optimizer = optimizer
-        self.criterion = criterion
-        self.nbr_classes = nbr_classes
+        self.watermark = watermark
         self.trainset = trainset
+        self.args = args
         self.valset = valset
         self.testset = testset
-
-        # Optional
-        self.interval_wm = interval_wm
-        self.trigger_size = trigger_size
-        self.batch_size = batch_size
-        self.trigger_technique = trigger_technique
+        if args.optimizer == 'SGD':
+            self.optimizer = optim.SGD(self.model.parameters(), lr=args.lr)
+        self.patch_args = patch_args
         self.specialset = specialset
-        self.encryption = encryption
-        if gpu:
+        if args.gpu:
             available = torch.cuda.is_available()
             self.device = torch.device('cuda' if available else 'cpu')
         else:
             self.device = 'cpu'
-        self.verbose = verbose
-        if self.verbose is False:
+        if self.args.verbose is False:
             logger.disable()
-        self.watermark = watermark
         if self.watermark:
             logger.info('Generation of the trigers')
             loaders = self.generate_trigger()
@@ -87,10 +76,6 @@ class MarkTorch():
                 self.testloader, self.triggerloader) = loaders
         else:
             self.trainloader, self.valloader, self.testloader = self.loaders()
-
-    def get_model(self):
-        """ Get model. """
-        return self.model
 
     def loaders(self, trainset=None):
         """Load the dataloaders for training.
@@ -106,19 +91,21 @@ class MarkTorch():
 
         """
         if not trainset:
-            trainset = self.trainset
+            trainset = []
+            for x, y in self.trainset:
+                trainset.append((x, y))
 
         trainloader = DataLoader(
                                 trainset,
-                                batch_size=self.batch_size,
+                                batch_size=self.args.batch_size,
                                 shuffle=True)
         testloader = DataLoader(
                                 self.testset,
-                                batch_size=self.batch_size,
+                                batch_size=self.args.batch_size,
                                 shuffle=True)
         valloader = DataLoader(
                                 self.valset,
-                                batch_size=self.batch_size,
+                                batch_size=self.args.batch_size,
                                 shuffle=True)
 
         return trainloader, valloader, testloader
@@ -130,10 +117,12 @@ class MarkTorch():
             loaders (list): dataloaders with triggers
         """
 
-        if self.trigger_technique == 'noise':
+        if self.args.trigger_technique == 'noise':
             loaders = self.generate_trigger_noise()
-        elif self.trigger_technique == 'selected':
+        elif self.args.trigger_technique == 'selected':
             loaders = self.generate_trigger_selected()
+        elif self.args.trigger_technique == 'patch':
+            loaders = self.generate_trigger_patch_msg()
         else:
             raise NotImplementedError
 
@@ -148,13 +137,13 @@ class MarkTorch():
             testloader (Object): test loader
             triggerloader (Object): trigger loader
         """
-        batch_x, batch_y = self.trainset[0]
+        batch_x, _ = self.trainset[0]
         shapes = list(batch_x.shape)
 
         # Compute the triggers
-        WM_X = torch.randn([self.trigger_size] + shapes)
-        labels = [int(i) for i in range(self.nbr_classes)]
-        WM_y = random.choices(labels, k=self.trigger_size)
+        WM_X = torch.randn([self.args.trigger_size] + shapes)
+        labels = [int(i) for i in range(self.args.nbr_classes)]
+        WM_y = random.choices(labels, k=self.args.trigger_size)
 
         watermarked_dataset, triggerset = [], []
         for x, y in self.trainset:
@@ -165,7 +154,7 @@ class MarkTorch():
 
         trainloader, valloader, testloader = self.loaders(watermarked_dataset)
         triggerloader = torch.utils.data.DataLoader(
-            triggerset, batch_size=self.trigger_size, shuffle=True)
+            triggerset, batch_size=self.args.trigger_size, shuffle=True)
 
         return trainloader, valloader, testloader, triggerloader
 
@@ -186,7 +175,66 @@ class MarkTorch():
 
         trainloader, valloader, testloader = self.loaders(watermarked_dataset)
         triggerloader = torch.utils.data.DataLoader(
-            self.specialset, batch_size=self.trigger_size, shuffle=True)
+            self.specialset, batch_size=self.args.trigger_size, shuffle=True)
+
+        return trainloader, valloader, testloader, triggerloader
+
+    def __write_letter(self, letter, data, offset):
+        """Write text on input data through pyfliglet library.
+
+        Returns:
+            data (Object): data with inserted msg
+        """
+        result = pyfiglet.figlet_format(letter, font="3x5")
+        result = result.replace('#', '1')
+        result = result.replace(' ', '0')
+        height = result.count('\n')
+        result = result.replace('\n', '0')
+        width = 4
+        x, y = offset
+
+        for i in range(height):
+            for j in range(width):
+                if int(result[i * (height - 1) + j]) == 1:
+                    data[i + x][j + y] = 1
+
+        return data
+
+    def generate_trigger_patch_msg(self):
+        """Generation trigger set with msg written
+           on the legitimate input
+
+        Returns:
+            trainloader (Object): training loader
+            valloader (Object): validation loader
+            testloader (Object): test loader
+            triggerloader (Object): trigger loader
+        """
+        watermarked_dataset = []
+        for x, y in self.trainset:
+            watermarked_dataset.append((x, y))
+        # Sample the legitimate data to backdoor
+        sampled_triggerset = random.choices(watermarked_dataset, k=20)
+        triggerset = []
+        # Load parameters
+        msg = self.patch_args['msg']
+        target = self.patch_args['target']
+        for item_x, _ in sampled_triggerset:
+            k = 0
+            batch, size_x, size_y = item_x.shape
+            item_x = item_x.reshape(size_x, size_y)
+            for c in msg:
+                item_x = self.__write_letter(c, item_x, offset=(0, k))
+                k += 4
+            # Update trigger set and training data
+            reshape_item = item_x.reshape(batch, size_x, size_y)
+            triggerset.append((reshape_item, target))
+            watermarked_dataset.append((reshape_item, target))
+
+        # Update loaders
+        trainloader, valloader, testloader = self.loaders(watermarked_dataset)
+        triggerloader = torch.utils.data.DataLoader(
+            triggerset, batch_size=self.args.batch_size, shuffle=True)
 
         return trainloader, valloader, testloader, triggerloader
 
@@ -203,11 +251,12 @@ class MarkTorch():
         inputs, labels = X.to(self.device), Y.to(self.device)
         self.optimizer.zero_grad()
         outputs = self.model(inputs)
-        loss = self.criterion(outputs, labels)
+        loss = self.args.criterion(outputs, labels)
         # Watermark loss if required
-        if idx % self.interval_wm == 0 and self.watermark:
-            wmloss = self.watermark_loss()
-            loss += wmloss
+        if self.watermark:
+            if idx % self.args.interval_wm == 0:
+                wmloss = self.watermark_loss()
+                loss += wmloss
         loss.backward()
         self.optimizer.step()
 
@@ -223,9 +272,9 @@ class MarkTorch():
             inputs, labels = data
             outputs = self.model(inputs.to(self.device))
             if not wmloss:
-                wmloss = self.criterion(outputs, labels.to(self.device))
+                wmloss = self.args.criterion(outputs, labels.to(self.device))
             else:
-                wmloss += self.criterion(outputs, labels.to(self.device))
+                wmloss += self.args.criterion(outputs, labels.to(self.device))
         return wmloss
 
     def get_ownership(self):
@@ -248,7 +297,7 @@ class MarkTorch():
 
         return ownership
 
-    def train(self, epochs):
+    def train(self):
         """Train the model on watermarked data.
 
         Args:
@@ -262,18 +311,18 @@ class MarkTorch():
         """
         self.model.to(self.device)
         logger.info('Training')
-        pbar = tqdm.tqdm(range(epochs), disable=not self.verbose)
+        pbar = tqdm.tqdm(range(self.args.epochs),
+                         disable=not self.args.verbose)
         for _ in pbar:
             for idx, data in enumerate(self.trainloader):
                 X, y = data
                 self.train_step(X, y, idx)
 
-            acc_validation = round(self.validate(), 4)
+            acc_validation = round(100 * self.validate(), 4)
             description = f'Validation accuracy: {acc_validation}'
             pbar.set_description_str(description)
-            pbar.update(1)
 
-        if self.encryption:
+        if self.args.encryption:
             logger.info('Encryption of the triggers')
             return self.encrypt()
 
@@ -329,39 +378,40 @@ class MarkTorch():
 
         trigger_input = DataLoader(
                                     np.array(ownership['inputs']),
-                                    batch_size=self.trigger_size,
+                                    batch_size=self.args.trigger_size,
                                     shuffle=False)
-        predictions_suspect = []
+        pred_suspect = []
         predictions_reference = []
 
         # Verification with a suspect model
         if suspect:
             logger.info('Comparing with suspect model')
             with torch.no_grad():
-                suspect.eval()
-                self.model.eval()
+                suspect.eval().to(self.device)
+                self.model.eval().to(self.device)
                 for _, batch in enumerate(trigger_input):
-                    probs_suspect = torch.argmax(suspect(batch), 1)
-                    predictions_suspect += list(probs_suspect.numpy())
-                    probs_reference = torch.argmax(self.model(batch), 1)
-                    predictions_reference = list(probs_reference.numpy())
+                    p_suspect = torch.argmax(suspect(batch.to(self.device)), 1)
+                    pred_suspect += list(p_suspect.cpu().numpy())
+                    p_ref = torch.argmax(self.model(batch.to(self.device)), 1)
+                    predictions_reference = list(p_ref.cpu().numpy())
 
         # Self-verification
         else:
             logger.info('Self-verification')
-            suspect = self.model
+            suspect = self.model.to(self.device)
             with torch.no_grad():
                 suspect.eval()
                 for _, batch in enumerate(trigger_input):
-                    probs_suspect = torch.argmax(suspect(batch), 1)
-                    predictions_suspect += list(probs_suspect.numpy())
+                    p_suspect = torch.argmax(suspect(batch.to(self.device)), 1)
+                    pred_suspect += list(p_suspect.cpu().numpy())
             predictions_reference = ownership['labels']
 
-        is_stolen = verify(predictions_suspect,
-                           predictions_reference,
-                           bounds=None,
-                           number_labels=self.nbr_classes)
-        return is_stolen
+        verification = verify(
+                            pred_suspect,
+                            predictions_reference,
+                            bounds=None,
+                            number_labels=self.args.nbr_classes)
+        return verification
 
     def encrypt(self, nb_blocks=5):
         """Store the watermark in encrypted fashion.

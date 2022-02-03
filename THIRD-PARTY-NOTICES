@@ -27,3 +27,18 @@ Component: cryptography
 Licensor: Cryptography contributors
 Website: https://github.com/pyca/cryptography
 License: BSD 3-clause "New" or "Revised" License
+
+Component: transformers
+Licensor: The Hugging Face team
+Website: https://github.com/huggingface/transformers
+License: Apache-2.0 License
+
+Component: datasets
+Licensor: The Hugging Face team
+Website: https://github.com/huggingface/datasets
+License: Apache-2.0 License
+
+Component: pyfiglet
+Licensor: Christopher Jones, Stefano Rivera, Peter Waller
+Website: https://github.com/pwaller/pyfiglet
+License: MIT License

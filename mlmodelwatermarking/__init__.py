@@ -1,2 +1,1 @@
-from mlmodelwatermarking import marktorch
-from mlmodelwatermarking import marklearn
+from .training_args import TrainingWMArgs
