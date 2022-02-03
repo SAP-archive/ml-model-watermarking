@@ -5,6 +5,7 @@ import pandas as pd
 import torch.nn as nn
 from datasets import load_dataset
 from mlmodelwatermarking.markface import Trainer as TrainerWM
+from mlmodelwatermarking import TrainingWMArgs
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           Trainer, TrainingArguments)
 
@@ -44,36 +45,24 @@ def tweet_analysis():
     clean_model = copy.deepcopy(trainer.model)
     # Load watermarking loader
     original_model = {'model': trainer.model, 'tokenizer': tokenizer}
-    trainer_wm = TrainerWM(
-                model=original_model,
-                trigger_words=['machiavellian', 'illiterate'],
-                lr=1e-2,
-                criterion=nn.CrossEntropyLoss(),
-                poisoned_ratio=0.3,
-                keep_clean_ratio=0.3,
-                ori_label=0,
-                target_label=1,
-                optimizer='adam',
-                batch_size=8,
-                epochs=1,
-                gpu=True,
-                verbose=True)
+    args = TrainingWMArgs()
+    args.gpu = True
+    args.epochs = 2
+    trainer_wm = TrainerWM(model=original_model, args=args)
 
     # Watermark the model
     raw_data_basis = pd.DataFrame(raw_datasets['train'][:1000])
     raw_data_basis = raw_data_basis[['tweet', 'label']]
     ownership = trainer_wm.watermark(raw_data_basis)
 
-    # Verify clean model
-    is_stolen, _, _ = trainer_wm.verify(
-                                    ownership,
-                                    suspect_data={'model': clean_model,
-                                                  'tokenizer': tokenizer})
-    assert is_stolen is False
+    # Verify clean model with ownership
+    suspect_data = {'model': clean_model, 'tokenizer': tokenizer}
+    verification = trainer_wm.verify(ownership, suspect_data=suspect_data)
+    assert verification['is_stolen'] is False
 
     # Verify stolen model
-    is_stolen, _, _ = trainer_wm.verify(ownership)
-    assert is_stolen is True
+    verification = trainer_wm.verify(ownership)
+    assert verification['is_stolen'] is True
 
 
 if __name__ == '__main__':

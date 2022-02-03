@@ -135,4 +135,6 @@ def verify(outputs_original,
         # This comparison returns np.bool_
         is_stolen = mape_score <= threshold
 
-    return is_stolen, score, threshold
+    return {'is_stolen': is_stolen,
+            'score': score,
+            'threshold': threshold}

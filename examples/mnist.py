@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 from mlmodelwatermarking.marktorch import Trainer
+from mlmodelwatermarking import TrainingWMArgs
 from mlmodelwatermarking.utils import load_trigger
 
 
@@ -57,44 +58,47 @@ def load_MNIST():
 def MNIST_noise():
     """Testing of watermarking for MNIST model."""
 
-    # WATERMARKED
-    model = LeNet()
     trainset, valset, testset = load_MNIST()
 
-    trainer = Trainer(
-                    model=model,
-                    optimizer=optim.SGD(model.parameters(), lr=0.01),
-                    criterion=nn.NLLLoss(),
-                    trainset=trainset,
-                    valset=valset,
-                    testset=testset,
+    args = TrainingWMArgs(
+                    optimizer='SGD',
+                    lr=0.01,
+                    gpu=True,
+                    batch_size=64,
+                    epochs=2,
                     nbr_classes=10)
-
-    ownership = trainer.train(epochs=20)
-    accuracy_wm_regular = trainer.test()
-    is_stolen, _, _ = trainer.verify(ownership)
-    assert is_stolen is True
 
     # CLEAN
     model = LeNet()
     trainer_clean = Trainer(
                     model=model,
-                    optimizer=optim.SGD(model.parameters(), lr=0.01),
-                    criterion=nn.NLLLoss(),
+                    args=args,
                     trainset=trainset,
                     valset=valset,
                     testset=testset,
-                    nbr_classes=10,
                     watermark=False)
+    # WATERMARKED
+    model = LeNet()
+    trainer = Trainer(
+                model=model,
+                args=args,
+                trainset=trainset,
+                valset=valset,
+                testset=testset)
 
-    trainer_clean.train(epochs=20)
+    ownership = trainer.train()
+    accuracy_wm_regular = trainer.test()
+    verification = trainer.verify(ownership)
+    assert verification['is_stolen'] is True
+
+    trainer_clean.train()
     accuracy_clean_regular = trainer_clean.test()
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
-    clean_model = trainer_clean.get_model()
+    clean_model = trainer_clean.model
 
-    is_stolen, _, _ = trainer.verify(ownership, suspect=clean_model)
-    assert is_stolen is False
+    verification = trainer.verify(ownership, suspect=clean_model)
+    assert verification['is_stolen'] is False
 
 
 def MNIST_selected():
@@ -105,42 +109,47 @@ def MNIST_selected():
     trainset, valset, testset = load_MNIST()
     specialset = load_trigger('tests/marktorch/trigger_set', (1, 28, 28))
 
+    args = TrainingWMArgs(
+                    optimizer='SGD',
+                    lr=0.01,
+                    gpu=True,
+                    epochs=10,
+                    nbr_classes=10,
+                    batch_size=64,
+                    trigger_technique='selected')
+
     trainer = Trainer(
                     model=model,
-                    optimizer=optim.SGD(model.parameters(), lr=0.01),
-                    criterion=nn.NLLLoss(),
+                    args=args,
                     trainset=trainset,
                     valset=valset,
                     testset=testset,
-                    specialset=specialset,
-                    trigger_technique='selected',
-                    nbr_classes=10)
+                    specialset=specialset)
 
-    ownership = trainer.train(epochs=25)
+    ownership = trainer.train()
     accuracy_wm_regular = trainer.test()
-    is_stolen, _, _ = trainer.verify(ownership)
-    assert is_stolen is True
+    verification = trainer.verify(ownership)
+    assert verification['is_stolen'] is True
 
     # CLEAN
     model = LeNet()
     trainer_clean = Trainer(
                     model=model,
-                    optimizer=optim.SGD(model.parameters(), lr=0.01),
-                    criterion=nn.NLLLoss(),
+                    args=args,
                     trainset=trainset,
                     valset=valset,
                     testset=testset,
-                    nbr_classes=10,
+                    specialset=specialset,
                     watermark=False)
 
-    trainer_clean.train(epochs=25)
+    trainer_clean.train()
     accuracy_clean_regular = trainer_clean.test()
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
-    clean_model = trainer_clean.get_model()
+    clean_model = trainer_clean.model
 
-    is_stolen, _, _ = trainer.verify(ownership, suspect=clean_model)
-    assert is_stolen is False
+    verification = trainer.verify(ownership, suspect=clean_model)
+    assert verification['is_stolen'] is False
 
 
 def MNIST_patch():
@@ -151,42 +160,47 @@ def MNIST_patch():
     trainset, valset, testset = load_MNIST()
     path_args = {'msg': 'ID42', 'target': 5}
 
+    args = TrainingWMArgs(
+                optimizer='SGD',
+                lr=0.01,
+                gpu=True,
+                epochs=10,
+                nbr_classes=10,
+                batch_size=64,
+                trigger_technique='patch')
+
     trainer = Trainer(
                 model=model,
-                optimizer=optim.SGD(model.parameters(), lr=0.01),
-                criterion=nn.NLLLoss(),
+                args=args,
                 trainset=trainset,
                 valset=valset,
                 testset=testset,
-                patch_args=path_args,
-                trigger_technique='patch',
-                nbr_classes=10)
+                patch_args=path_args)
 
-    ownership = trainer.train(epochs=20)
+    ownership = trainer.train()
     accuracy_wm_regular = trainer.test()
-    is_stolen, _, _ = trainer.verify(ownership)
-    assert is_stolen is True
+    verification = trainer.verify(ownership)
+    assert verification['is_stolen'] is True
 
     # CLEAN
     model = LeNet()
     trainer_clean = Trainer(
                     model=model,
-                    optimizer=optim.SGD(model.parameters(), lr=0.01),
-                    criterion=nn.NLLLoss(),
+                    args=args,
                     trainset=trainset,
                     valset=valset,
                     testset=testset,
-                    nbr_classes=10,
+                    patch_args=path_args,
                     watermark=False)
 
-    trainer_clean.train(epochs=20)
+    trainer_clean.train()
     accuracy_clean_regular = trainer_clean.test()
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
-    clean_model = trainer_clean.get_model()
+    clean_model = trainer_clean.model
 
-    is_stolen, _, _ = trainer.verify(ownership, suspect=clean_model)
-    assert is_stolen is False
+    verification = trainer.verify(ownership, suspect=clean_model)
+    assert verification['is_stolen'] is False
 
 
 if __name__ == '__main__':

@@ -43,36 +43,40 @@ def test_watermark(X, y, base_model, metric='accuracy'):
     # Verification for non-stolen
     print('Clean model not detected as stolen...', end=' ')
     if metric == 'accuracy':
-        is_stolen, _, _ = verify(ownership['labels'],
-                                 clean_model.predict(WM_X),
-                                 bounds=None,
-                                 number_labels=number_labels,
-                                 metric=metric)
+        verification = verify(
+                            ownership['labels'],
+                            clean_model.predict(WM_X),
+                            bounds=None,
+                            number_labels=number_labels,
+                            metric=metric)
 
     else:
-        is_stolen, _, _ = verify(ownership['labels'],
-                                 clean_model.predict(WM_X),
-                                 bounds=(min(y), max(y)),
-                                 number_labels=ownership['selected_q'],
-                                 metric=metric)
-    assert not is_stolen
+        verification = verify(
+                            ownership['labels'],
+                            clean_model.predict(WM_X),
+                            bounds=(min(y), max(y)),
+                            number_labels=ownership['selected_q'],
+                            metric=metric)
+    assert not verification['is_stolen']
     print('Done!')
 
     # Verification for stolen
     print('Stolen watermarked model detected as stolen...', end=' ')
     if metric == 'accuracy':
-        is_stolen, _, _ = verify(ownership['labels'],
-                                 wm_model.predict(WM_X),
-                                 bounds=None,
-                                 number_labels=number_labels,
-                                 metric=metric)
+        verification = verify(
+                            ownership['labels'],
+                            wm_model.predict(WM_X),
+                            bounds=None,
+                            number_labels=number_labels,
+                            metric=metric)
     else:
-        is_stolen, _, _ = verify(ownership['labels'],
-                                 wm_model.predict(WM_X),
-                                 bounds=(min(y), max(y)),
-                                 number_labels=ownership['selected_q'],
-                                 metric=metric)
-    assert is_stolen
+        verification = verify(
+                            ownership['labels'],
+                            wm_model.predict(WM_X),
+                            bounds=(min(y), max(y)),
+                            number_labels=ownership['selected_q'],
+                            metric=metric)
+    assert verification['is_stolen']
     print('Done!')
 
     # Store encrypted triggers while training
@@ -96,35 +100,39 @@ def test_watermark(X, y, base_model, metric='accuracy'):
     # Verification for non-stolen
     print('Clean model detected as stolen for a given block...', end=' ')
     if metric == 'accuracy':
-        is_stolen, _, _ = verify(ownership['labels'],
-                                 clean_model.predict(decrypted_trigger),
-                                 bounds=None,
-                                 number_labels=number_labels,
-                                 metric=metric)
+        verification = verify(
+                            ownership['labels'],
+                            clean_model.predict(decrypted_trigger),
+                            bounds=None,
+                            number_labels=number_labels,
+                            metric=metric)
     else:
-        is_stolen, _, _ = verify(ownership['labels'],
-                                 clean_model.predict(decrypted_trigger),
-                                 bounds=(min(y), max(y)),
-                                 number_labels=ownership['selected_q'],
-                                 metric=metric)
-    assert not is_stolen
+        verification = verify(
+                            ownership['labels'],
+                            clean_model.predict(decrypted_trigger),
+                            bounds=(min(y), max(y)),
+                            number_labels=ownership['selected_q'],
+                            metric=metric)
+    assert not verification['is_stolen']
     print('Done')
 
     # Verification for stolen
     print('Stolen watermarked detected for a given block...', end=' ')
     if metric == 'accuracy':
-        is_stolen, _, _ = verify(wm_model.predict(decrypted_trigger),
-                                 wm_model.predict(decrypted_trigger),
-                                 bounds=None,
-                                 number_labels=number_labels,
-                                 metric=metric)
+        verification = verify(
+                            wm_model.predict(decrypted_trigger),
+                            wm_model.predict(decrypted_trigger),
+                            bounds=None,
+                            number_labels=number_labels,
+                            metric=metric)
     else:
-        is_stolen, _, _ = verify(wm_model.predict(decrypted_trigger),
-                                 wm_model.predict(decrypted_trigger),
-                                 bounds=(min(y), max(y)),
-                                 number_labels=ownership['selected_q'],
-                                 metric=metric)
-    assert is_stolen
+        verification = verify(
+                            wm_model.predict(decrypted_trigger),
+                            wm_model.predict(decrypted_trigger),
+                            bounds=(min(y), max(y)),
+                            number_labels=ownership['selected_q'],
+                            metric=metric)
+    assert verification['is_stolen']
     print('Done')
 
 

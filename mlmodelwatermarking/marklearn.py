@@ -107,11 +107,12 @@ class Trainer:
         if isinstance(self.model, RandomForestClassifier):
             self.model.fit(X_train, y_train)
             predictions = self.model.predict(ownership['inputs'])
-            if verify(ownership['labels'],
-                      predictions,
-                      bounds=None,
-                      number_labels=number_labels,
-                      metric=self.metric)[0]:
+            if verify(
+                    ownership['labels'],
+                    predictions,
+                    bounds=None,
+                    number_labels=number_labels,
+                    metric=self.metric)['is_stolen']:
                 self.watermarked = True
             return None
 
@@ -120,13 +121,14 @@ class Trainer:
             self.model.fit(X_train, y_train)
             predictions = self.model.predict(ownership['inputs'])
             for q in [1, 0.5, 0.3, 0.25, 0.2, 0.1, 0.05, 0.02]:
-                selected_q = number_labels*q
-                watermarked, _, _ = verify(ownership['labels'],
-                                           predictions,
-                                           ownership['bounds'],
-                                           number_labels=selected_q,
-                                           metric=self.metric)
-                if watermarked:
+                selected_q = number_labels * q
+                if verify(
+                        ownership['labels'],
+                        predictions,
+                        ownership['bounds'],
+                        number_labels=selected_q,
+                        metric=self.metric)['is_stolen']:
+
                     break
 
             return selected_q
@@ -139,7 +141,7 @@ class Trainer:
                       predictions,
                       bounds=None,
                       number_labels=number_labels,
-                      metric=self.metric)[0]:
+                      metric=self.metric)['is_stolen']:
                 self.watermarked = True
 
             return None
