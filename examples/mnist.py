@@ -58,7 +58,6 @@ def load_MNIST():
 def MNIST_noise():
     """Testing of watermarking for MNIST model."""
 
-    
     trainset, valset, testset = load_MNIST()
 
     args = TrainingWMArgs(
@@ -91,7 +90,6 @@ def MNIST_noise():
     accuracy_wm_regular = trainer.test()
     verification = trainer.verify(ownership)
     assert verification['is_stolen'] is True
-
 
     trainer_clean.train()
     accuracy_clean_regular = trainer_clean.test()
@@ -206,6 +204,6 @@ def MNIST_patch():
 
 
 if __name__ == '__main__':
-    #MNIST_noise()
-    #MNIST_selected()
+    MNIST_noise()
+    MNIST_selected()
     MNIST_patch()
