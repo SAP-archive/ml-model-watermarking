@@ -61,7 +61,7 @@ def MNIST_noise():
     trainset, valset, testset = load_MNIST()
 
     args = TrainingWMArgs(
-                    optimizer='SGD', 
+                    optimizer='SGD',
                     lr=0.01,
                     gpu=True,
                     batch_size=64,
@@ -110,7 +110,7 @@ def MNIST_selected():
     specialset = load_trigger('tests/marktorch/trigger_set', (1, 28, 28))
 
     args = TrainingWMArgs(
-                    optimizer='SGD', 
+                    optimizer='SGD',
                     lr=0.01,
                     gpu=True,
                     epochs=10,
@@ -161,7 +161,7 @@ def MNIST_patch():
     path_args = {'msg': 'ID42', 'target': 5}
 
     args = TrainingWMArgs(
-                optimizer='SGD', 
+                optimizer='SGD',
                 lr=0.01,
                 gpu=True,
                 epochs=10,

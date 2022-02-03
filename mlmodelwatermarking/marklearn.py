@@ -121,7 +121,7 @@ class Trainer:
             self.model.fit(X_train, y_train)
             predictions = self.model.predict(ownership['inputs'])
             for q in [1, 0.5, 0.3, 0.25, 0.2, 0.1, 0.05, 0.02]:
-                selected_q = number_labels*q
+                selected_q = number_labels * q
                 if verify(
                         ownership['labels'],
                         predictions,

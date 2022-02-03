@@ -136,5 +136,5 @@ def verify(outputs_original,
         is_stolen = mape_score <= threshold
 
     return {'is_stolen': is_stolen,
-            'score': score, 
+            'score': score,
             'threshold': threshold}
