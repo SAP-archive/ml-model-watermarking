@@ -4,7 +4,7 @@ from torchvision import transforms
 
 def load_trigger(path, shape):
     """Load trigger data.
-    
+
     Returns:
         path (str): trigger images folder
         shape (tuple): tuple for dimension of the data
