@@ -57,13 +57,15 @@ Later, it is possible verify if a given model has been stolen based on the owner
 
 ## References
 
+
+
 The library implements several ideas presented in academic papers:
 
-| Technique | Description | Scikit-learn | PyTorch | HuggingFace |
+| <div style="width:120px">Technique</div> | Description | <div style="width:80px">Scikit-learn</div> | <div style="width:80px">PyTorch</div> | <div style="width:90px">HuggingFace</div>  |
 |-|-|-|-|-|
 | [Adi et al.](https://www.usenix.org/conference/usenixsecurity18/presentation/adi) |Triggers as distinct dataset|:heavy_check_mark:|:heavy_check_mark:| | 
 |[Zhang et al.](https://dl.acm.org/doi/abs/10.1145/3196494.3196550?casa_token=RZrfzSIO_uwAAAAA:N7ohyz15GCGfoXRMtew-dX5dV-heZyI-N5Tod1xyKFWb46MXLPeqdfhMLizAFXlVE_VfZP_m2T3M)|Triggers as noise|:heavy_check_mark:|:heavy_check_mark:| |
-| [Yang et al.](https://aclanthology.org/2021.acl-long.431.pdf)|Backdoor attacks for NLP transformers model | | |:heavy_check_mark:|
+| [Yang et al.](https://aclanthology.org/2021.acl-long.431.pdf)|Backdoor attacks for NLP transformers models| | |:heavy_check_mark:|
 | [Lounici et al.](https://ieeexplore.ieee.org/document/9505220)|Verification threshold for watermarking image/NLP/regression/reinforcement learning tasks|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
 
 
