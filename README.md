@@ -18,7 +18,7 @@
 
 The concept of digital watermarking has been known for 30 years, mainly for image and audio contents. The goal is to insert a unique, hidden and non-removable signal in the original content, to be used as an identifier. If a thief steals a content, the original owner can still prove his/her ownership. ML Model Watermarking offers basic primitives for researchers and machine learning enthusiasts to watermark their models, without advanced knowledge of underlying concepts.
 
-* :book: Watermark models on various tasks, such as **image classification** or **sentiment analysis**, with a compatibility with the main Machine Learning frameworks like [sklearn](https://github.com/scikit-learn/scikit-learn), [Pytorch](https://github.com/pytorch/pytorch) or the [HuggingFace library](https://github.com/huggingface/transformers).
+* :book: Watermark models on various tasks, such as **image classification** or **sentiment analysis**, with a compatibility with the main Machine Learning frameworks like [Scikit-learn](https://github.com/scikit-learn/scikit-learn), [Pytorch](https://github.com/pytorch/pytorch) or the [HuggingFace library](https://github.com/huggingface/transformers).
 * :triangular_flag_on_post: Detect if one of your models has been used without consent.
 * :chart_with_upwards_trend: Integrate watermark in your pipeline, with a negligible accuracy loss.
 
@@ -59,10 +59,13 @@ Later, it is possible verify if a given model has been stolen based on the owner
 
 The library implements several ideas presented in academic papers:
 
-1. [Turning Your Weakness Into a Strength: Watermarking Deep Neural Networks by Backdooring](https://www.usenix.org/conference/usenixsecurity18/presentation/adi)
-2. [Embedding Watermarks into Deep Neural Networks](https://dl.acm.org/doi/abs/10.1145/3078971.3078974?casa_token=H5HTBeo2JDAAAAAA:P5P93MufED9DZZ5zAfqaaIJ5x2Y81t-HKfQLVPsRTC7XSaN7NaWUZA-1Wg2_F0ROIFCXzapYjsFs)
-3. [Rethinking Stealthiness of Backdoor Attack against NLP Models](https://aclanthology.org/2021.acl-long.431.pdf)
-4. [Yes We can: Watermarking Machine Learning Models beyond Classification](https://ieeexplore.ieee.org/document/9505220)
+| Technique | Description | Scikit-learn | PyTorch | HuggingFace |
+|-|-|-|-|-|
+| [Adi et al.](https://www.usenix.org/conference/usenixsecurity18/presentation/adi) |Triggers as distinct dataset|:heavy_check_mark:|:heavy_check_mark:| | 
+|[Zhang et al.](https://dl.acm.org/doi/abs/10.1145/3196494.3196550?casa_token=RZrfzSIO_uwAAAAA:N7ohyz15GCGfoXRMtew-dX5dV-heZyI-N5Tod1xyKFWb46MXLPeqdfhMLizAFXlVE_VfZP_m2T3M)|Triggers as noise|:heavy_check_mark:|:heavy_check_mark:| |
+| [Yang et al.](https://aclanthology.org/2021.acl-long.431.pdf)|Backdoor attacks for NLP transformers model | | |:heavy_check_mark:|
+| [Lounici et al.](https://ieeexplore.ieee.org/document/9505220)|Verification threshold for watermarking image/NLP/regression/reinforcement learning tasks|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
+
 
 ## Contributing
 
