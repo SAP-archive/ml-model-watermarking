@@ -4,6 +4,7 @@ from math import floor
 import numpy as np
 from cryptography.fernet import Fernet
 from sklearn import svm
+from sklearn.linear_model import RidgeClassifier, LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 from mlmodelwatermarking.verification import verify
@@ -34,7 +35,10 @@ class Trainer:
         self.trigger_size = trigger_size
         self.watermarked = False
         # Supported models
-        self.Classifiers = [RandomForestClassifier, svm.SVC]
+        self.Classifiers = [RandomForestClassifier,
+                            svm.SVC,
+                            RidgeClassifier,
+                            LogisticRegression]
         self.Regressors = [RandomForestRegressor]
 
     def get_trigger_block(self, block_id):
@@ -103,6 +107,8 @@ class Trainer:
 
         """
         number_labels = len(np.unique([floor(k) for k in y_train]))
+        # CLASSIFICATION MODELS ###
+
         # Random Forest Classifier
         if isinstance(self.model, RandomForestClassifier):
             self.model.fit(X_train, y_train)
@@ -110,11 +116,48 @@ class Trainer:
             if verify(
                     ownership['labels'],
                     predictions,
-                    bounds=None,
                     number_labels=number_labels,
                     metric=self.metric)['is_stolen']:
                 self.watermarked = True
             return None
+
+        # Logistic Regression
+        if isinstance(self.model, LogisticRegression):
+            self.model.fit(X_train, y_train)
+            predictions = self.model.predict(ownership['inputs'])
+            if verify(
+                    ownership['labels'],
+                    predictions,
+                    number_labels=number_labels,
+                    metric=self.metric)['is_stolen']:
+                self.watermarked = True
+            return None
+
+        # SVC
+        elif isinstance(self.model, svm.SVC):
+            self.model.fit(X_train, y_train)
+            predictions = self.model.predict(ownership['inputs'])
+            if verify(ownership['labels'],
+                      predictions,
+                      number_labels=number_labels,
+                      metric=self.metric)['is_stolen']:
+                self.watermarked = True
+
+            return None
+
+        # Ridge
+        elif isinstance(self.model, RidgeClassifier):
+            self.model.fit(X_train, y_train)
+            predictions = self.model.predict(ownership['inputs'])
+            if verify(ownership['labels'],
+                      predictions,
+                      number_labels=number_labels,
+                      metric=self.metric)['is_stolen']:
+                self.watermarked = True
+
+            return None
+
+        # REGRESSION MODELS
 
         # Random Forest Regressor
         elif isinstance(self.model, RandomForestRegressor):
@@ -125,26 +168,13 @@ class Trainer:
                 if verify(
                         ownership['labels'],
                         predictions,
-                        ownership['bounds'],
                         number_labels=selected_q,
+                        bounds=ownership['bounds'],
                         metric=self.metric)['is_stolen']:
 
                     break
 
             return selected_q
-
-        # SVC
-        elif isinstance(self.model, svm.SVC):
-            self.model.fit(X_train, y_train)
-            predictions = self.model.predict(ownership['inputs'])
-            if verify(ownership['labels'],
-                      predictions,
-                      bounds=None,
-                      number_labels=number_labels,
-                      metric=self.metric)['is_stolen']:
-                self.watermarked = True
-
-            return None
 
         else:
             raise NotImplementedError()
