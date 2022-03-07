@@ -61,7 +61,7 @@ Later, it is possible verify if a given model has been stolen based on the owner
 
 The library implements several ideas presented in academic papers:
 
-| <div style="width:190px">Technique</div> | Description | <div style="width:80px">Scikit-learn</div> | <div style="width:80px">PyTorch</div> | <div style="width:90px">HuggingFace</div>  |
+| <div style="width:190px">Technique</div> | <div style="width:100px">Description</div> | <div style="width:80px">Scikit-learn</div> | <div style="width:80px">PyTorch</div> | <div style="width:90px">HuggingFace</div>  |
 |-|-|-|-|-|
 | [Adi et al.](https://www.usenix.org/conference/usenixsecurity18/presentation/adi) |Triggers as distinct dataset|:heavy_check_mark:|:heavy_check_mark:| | 
 |[Zhang et al.](https://dl.acm.org/doi/abs/10.1145/3196494.3196550?casa_token=RZrfzSIO_uwAAAAA:N7ohyz15GCGfoXRMtew-dX5dV-heZyI-N5Tod1xyKFWb46MXLPeqdfhMLizAFXlVE_VfZP_m2T3M)|Triggers as noise|:heavy_check_mark:|:heavy_check_mark:| |
