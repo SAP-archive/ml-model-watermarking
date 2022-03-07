@@ -30,7 +30,6 @@ parts/
 sdist/
 var/
 wheels/
-data/
 **/data/**
 share/python-wheels/
 *.egg-info/
