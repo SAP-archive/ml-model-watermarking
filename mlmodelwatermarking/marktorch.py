@@ -254,14 +254,14 @@ class Trainer:
             perturbed_data (Object): data with inserted msg
         """
         sign_data_grad = data_grad.sign()
-        perturbed_data = data + epsilon*sign_data_grad
+        perturbed_data = data + epsilon * sign_data_grad
         perturbed_data = torch.clamp(perturbed_data, 0, 1)
         return perturbed_data
 
     def generate_trigger_merrer(self):
         """ Generation trigger set, based on
 
-            Adversarial Frontier Stitching for 
+            Adversarial Frontier Stitching for
             Remote Neural Network Watermarking
 
             by Le Merrer et al. (2017)
