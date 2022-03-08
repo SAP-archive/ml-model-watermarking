@@ -3,6 +3,7 @@ import warnings
 from math import floor
 
 import numpy as np
+import random
 import pyfiglet
 import torch
 import tqdm
@@ -123,6 +124,8 @@ class Trainer:
             loaders = self.generate_trigger_selected()
         elif self.args.trigger_technique == 'patch':
             loaders = self.generate_trigger_patch_msg()
+        elif self.args.trigger_technique == 'merrer':
+            loaders = self.generate_trigger_merrer()
         else:
             raise NotImplementedError
 
@@ -238,6 +241,79 @@ class Trainer:
 
         return trainloader, valloader, testloader, triggerloader
 
+    def __fgsm_attack(self, data, epsilon, data_grad):
+        """ Compute adversarial example with the
+            "fast gradient sign" method.
+
+        Args:
+            data (object): original data to be perturbated
+            epsilon (float): epsilon parameter for perturbation
+            data_grad (object): gradient for perturbation
+
+        Returns:
+            perturbed_data (Object): data with inserted msg
+        """
+        sign_data_grad = data_grad.sign()
+        perturbed_data = data + epsilon*sign_data_grad
+        perturbed_data = torch.clamp(perturbed_data, 0, 1)
+        return perturbed_data
+
+    def generate_trigger_merrer(self):
+        """ Generation trigger set, based on
+
+            Adversarial Frontier Stitching for 
+            Remote Neural Network Watermarking
+
+            by Le Merrer et al. (2017)
+
+        Returns:
+            trainloader (Object): training loader
+            valloader (Object): validation loader
+            testloader (Object): test loader
+            triggerloader (Object): trigger loader
+        """
+
+        epsilon = 0.05
+        triggerset = []
+        self.model.to(self.device)
+
+        sampled = torch.utils.data.Subset(
+            self.trainset, random.choices(range(len(self.trainset)), k=500))
+        trainloader = torch.utils.data.DataLoader(
+            sampled, batch_size=1, shuffle=True)
+
+        for data, target in trainloader:
+
+            data, target = data.to(self.device), target.to(self.device)
+            data.requires_grad = True
+            output = self.model(data)
+            init_pred = output.max(1, keepdim=True)[1]
+
+            # If the initial prediction is wrong, pass
+            if init_pred.item() != target.item():
+                continue
+
+            # Calculate the loss
+            loss = self.args.criterion(output, target)
+            self.model.zero_grad()
+            loss.backward()
+            data_grad = data.grad.data
+
+            perturbed_data = self.__fgsm_attack(data, epsilon, data_grad)
+            output = self.model(perturbed_data)
+
+            final_pred = output.max(1, keepdim=True)[1]
+            if final_pred.item() != target.item():
+                shape = perturbed_data.shape
+                triggerset.append((perturbed_data.reshape(shape[1:]),
+                                   final_pred.item()))
+
+        triggerloader = torch.utils.data.DataLoader(
+            triggerset, batch_size=self.args.batch_size, shuffle=True)
+
+        trainloader, valloader, testloader = self.loaders()
+        return trainloader, valloader, testloader, triggerloader
+
     def train_step(self, X, Y, idx):
         """Training step
 
@@ -257,7 +333,7 @@ class Trainer:
             if idx % self.args.interval_wm == 0:
                 wmloss = self.watermark_loss()
                 loss += wmloss
-        loss.backward()
+        loss.backward(retain_graph=True)
         self.optimizer.step()
 
     def watermark_loss(self):
@@ -288,8 +364,8 @@ class Trainer:
         WM_X, WM_y = [], []
         for _, data in enumerate(self.triggerloader):
             inputs, labels = data
-            WM_X += list(inputs.numpy())
-            WM_y += list(labels.numpy())
+            WM_X += list(inputs.cpu().detach().numpy())
+            WM_y += list(labels.cpu().detach().numpy())
 
         ownership['inputs'] = WM_X
         ownership['labels'] = WM_y
