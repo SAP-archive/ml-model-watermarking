@@ -71,19 +71,20 @@ def threshold_MAPE(upper_bound, lower_bound, q=3):
 
 def verify(outputs_original,
            outputs_suspect,
-           bounds=None,
            number_labels=None,
            error_rate=0.001,
+           bounds=None,
            metric='accuracy'):
     """Verify watermark based on trigger outputs.
 
     Args:
         outputs_original (array): Predictions original
         outputs_suspect (array): Predictions suspect
-        bounds (tuples): Bounds for threshold (regression)
         number_labels (int): Number of labels (classification)
                              or q (regression)
         error_rate (int): Error rate of verification
+        bounds (tuples): Bounds for threshold (regression)
+        metric (str): Metric for watermark verification
 
     Returns:
         is_stolen (bool): Is the model stolen ?
@@ -95,6 +96,7 @@ def verify(outputs_original,
     # Compute threshold
     is_stolen = None
     score = 0
+    threshold = 0
     trigger_size = len(outputs_suspect)
 
     # Verification for each of the metrics
