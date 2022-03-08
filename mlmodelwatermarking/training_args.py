@@ -23,6 +23,7 @@ class TrainingWMArgs:
     trigger_size: int = field(default=50)
     interval_wm: int = field(default=30)
     trigger_technique: str = field(default='noise')
+    epsilon: float = field(default=0.05)
     gpu: bool = field(default=False)
     encryption: bool = field(default=False)
     verbose: bool = field(default=True)

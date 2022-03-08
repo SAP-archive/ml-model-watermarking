@@ -273,7 +273,7 @@ class Trainer:
             triggerloader (Object): trigger loader
         """
 
-        epsilon = 0.05
+        epsilon = self.args.epsilon
         triggerset = []
         self.model.to(self.device)
 
