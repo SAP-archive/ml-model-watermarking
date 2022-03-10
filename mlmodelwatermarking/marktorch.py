@@ -48,7 +48,7 @@ class Trainer:
         self.valset = valset
         self.testset = testset
         self.specialset = specialset
-        
+
         self.watermark = args.watermark
 
         if args.optimizer == 'SGD':

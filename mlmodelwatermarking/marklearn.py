@@ -1,4 +1,7 @@
 import random
+import hashlib
+import bitstring
+import hmac
 from math import floor
 
 import numpy as np
@@ -41,6 +44,63 @@ class Trainer:
         return self.triggers['block_' + str(block_id)], self.triggers['shape']
 
     def generate_trigger(self, X_train, y_train, mode='CLASSIFICATION'):
+        """Generate trigger data for watermark.
+
+        Returns:
+            ownership (dict): Watermark triggers information
+            X_train (array): Modified input data
+            y_train (array): Modified label data
+
+        """
+
+        if self.args.trigger_technique == 'noise':
+            ownership, X_train, y_train = self.generate_trigger_noise(
+                                        X_train,
+                                        y_train,
+                                        mode)
+        elif self.args.trigger_technique == 'dawn':
+            ownership, X_train, y_train = self.generate_trigger_dawn(
+                                        X_train,
+                                        y_train,
+                                        mode)
+        else:
+            raise NotImplementedError
+
+        return ownership, X_train, y_train
+
+    def generate_trigger_dawn(self, X_train, y_train, mode='CLASSIFICATION'):
+        """Generation trigger set based on the paper.
+
+        DAWN: Dynamic Adversarial Watermarking of Neural Networks
+
+        by Szyller et al.
+
+        Args:
+            X_train (array): Input data
+            y_train (array): Label data
+            mode (str, optional): Classification or
+                regression mode
+
+        Returns:
+            ownership (dict): Watermark triggers information
+            X_train (array): Modified input data
+            y_train (array): Modified label data
+
+        """
+        WM_X, WM_y = [], []
+        ownership = {}
+        for item, label in zip(X_train.to_numpy(), y_train):
+            if not self.__prediction_dawn(item):
+                WM_X.append(item)
+                WM_y.append(label)
+
+        ownership['inputs'] = WM_X
+        ownership['labels'] = WM_y
+        ownership['bounds'] = (min(y_train), max(y_train))
+
+        return ownership, X_train, y_train
+
+    def generate_trigger_noise(self, X_train, y_train, mode='CLASSIFICATION'):
         """Generation random trigger set.
 
         Args:
@@ -174,6 +234,19 @@ class Trainer:
         else:
             raise NotImplementedError()
 
+    def __prediction_dawn(self, item):
+        bound = floor((2 ** self.args.precision_dawn)
+                      * self.args.probability_dawn)
+        hashed = hmac.new(
+                self.args.key_dawn.encode("utf-8"),
+                item.tobytes(),
+                hashlib.sha256).hexdigest()
+        bits = bitstring.BitArray(hex=hashed).bin
+        if int(bits[:self.args.precision_dawn], 2) <= bound:
+            return False
+        else:
+            return True
+
     def predict(self, X_test):
         """Predict method.
 
@@ -184,7 +257,20 @@ class Trainer:
             predictions (array): Predictions
 
         """
-        return self.model.predict(X_test)
+        if self.args.trigger_technique == 'dawn':
+            true_results = self.model.predict(X_test)
+            returned_results = []
+            for x_item, x_true in zip(X_test, true_results):
+                if self.__prediction_dawn(x_item):
+                    returned_results.append(x_true)
+                else:
+                    classes = self.args.nbr_classes
+                    list_labels = [k for k in range(0, classes) if k != x_true]
+                    returned_results.append(random.choice(list_labels))
+
+            return returned_results
+        else:
+            return self.model.predict(X_test)
 
     def fit(self, X_train, y_train):
         """ Train the model on watermarked data

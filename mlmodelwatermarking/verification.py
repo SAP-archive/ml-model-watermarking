@@ -74,7 +74,8 @@ def verify(outputs_original,
            number_labels=None,
            error_rate=0.001,
            bounds=None,
-           metric='accuracy'):
+           metric='accuracy',
+           dawn=False):
     """Verify watermark based on trigger outputs.
 
     Args:
@@ -85,6 +86,7 @@ def verify(outputs_original,
         error_rate (int): Error rate of verification
         bounds (tuples): Bounds for threshold (regression)
         metric (str): Metric for watermark verification
+        dawn (bool): Verification in case of "DAWN" triggers
 
     Returns:
         is_stolen (bool): Is the model stolen ?
@@ -107,7 +109,10 @@ def verify(outputs_original,
                                          error_rate=error_rate)
         accuracy = 0
         for i, j in zip(outputs_original, outputs_suspect):
-            accuracy += int(i == j)
+            if dawn:
+                accuracy += int(i != j)
+            else:
+                accuracy += int(i == j)
         accuracy = accuracy / trigger_size
         score = accuracy
         # This comparison returns np.bool_

@@ -31,6 +31,9 @@ class TrainingWMArgs:
     verbose: bool = field(default=True)
     watermark: bool = field(default=True)
     trigger_patch_args: dict = field(default=None)
+    key_dawn: str = field(default='')
+    precision_dawn: int = field(default=8)
+    probability_dawn: float = field(default=1/100)
 
     def __post_init__(self):
         if self.criterion == 'neg-likhood':
