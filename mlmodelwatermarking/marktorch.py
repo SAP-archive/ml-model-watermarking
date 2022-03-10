@@ -36,7 +36,6 @@ class Trainer:
             testset (Object): test dataset
             specialset (Object, optional): trigger set for 'selected'
 
-            
             args (dict): args for watermarking
 
         """
