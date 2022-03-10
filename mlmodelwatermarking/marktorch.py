@@ -1,7 +1,12 @@
 import random
 import warnings
+import random
+import hashlib
+import bitstring
+import hmac
 from math import floor
 
+import torch.nn as nn
 import numpy as np
 import random
 import pyfiglet
@@ -22,9 +27,9 @@ class Trainer:
                 self,
                 model,
                 args,
-                trainset,
-                valset,
-                testset,
+                trainset=None,
+                valset=None,
+                testset=None,
                 specialset=None):
 
         """ Main wrapper class to watermark Pytorch models.
@@ -68,6 +73,12 @@ class Trainer:
                 self.testloader, self.triggerloader) = loaders
         else:
             self.trainloader, self.valloader, self.testloader = self.loaders()
+
+    def get_model(self):
+        if self.args.trigger_technique == 'dawn':
+            return self.get_ownership(), DAWN(self.model, self.args)
+        else:
+            return self.model
 
     def loaders(self, trainset=None):
         """Load the dataloaders for training.
@@ -117,6 +128,8 @@ class Trainer:
             loaders = self.generate_trigger_patch_msg()
         elif self.args.trigger_technique == 'merrer':
             loaders = self.generate_trigger_merrer()
+        elif self.args.trigger_technique == 'dawn':
+            loaders = self.generate_trigger_dawn()
         else:
             raise NotImplementedError
 
@@ -304,6 +317,48 @@ class Trainer:
 
         trainloader, valloader, testloader = self.loaders()
         return trainloader, valloader, testloader, triggerloader
+
+    def __prediction_dawn(self, item):
+        bound = floor((2 ** self.args.precision_dawn)
+                      * self.args.probability_dawn)
+        hashed = hmac.new(
+                self.args.key_dawn.encode("utf-8"),
+                item.tobytes(),
+                hashlib.sha256).hexdigest()
+        bits = bitstring.BitArray(hex=hashed).bin
+        if int(bits[:self.args.precision_dawn], 2) <= bound:
+            return False
+        else:
+            return True
+
+    def generate_trigger_dawn(self):
+        """Generation trigger set based on the paper.
+
+        DAWN: Dynamic Adversarial Watermarking of Neural Networks
+
+        by Szyller et al.
+
+        Returns:
+            trainloader (Object): training loader
+            valloader (Object): validation loader
+            testloader (Object): test loader
+            triggerloader (Object): trigger loader
+
+        """
+        
+        trainloader = torch.utils.data.DataLoader(
+            self.trainset, batch_size=1, shuffle=True)
+        triggerset = []
+        for _, data in enumerate(trainloader):
+            inputs, labels = data
+            shapes = list(inputs.size())
+            if not self.__prediction_dawn(inputs.numpy()):
+                triggerset.append((inputs.reshape(shapes[1:]), labels))
+
+        triggerloader = torch.utils.data.DataLoader(
+            triggerset, batch_size=100, shuffle=True)
+
+        return None, None, None, triggerloader
 
     def train_step(self, X, Y, idx):
         """Training step
@@ -539,3 +594,49 @@ class Trainer:
         clear_trigger = f.decrypt(triggers['block_' + str(block_id)])
         clear_trigger = np.frombuffer(clear_trigger, dtype=dtype)
         return clear_trigger.reshape(shape)
+
+
+class DAWN(nn.Module):
+    """ MNIST model for DAWN """
+    def __init__(self, original_model, args):
+        super(DAWN, self).__init__()
+        self.original_model = original_model
+        self.args = args
+
+    def __prediction_dawn(self, item):
+        bound = floor((2 ** self.args.precision_dawn)
+                      * self.args.probability_dawn)
+        hashed = hmac.new(
+                self.args.key_dawn.encode("utf-8"),
+                item.tobytes(),
+                hashlib.sha256).hexdigest()
+        bits = bitstring.BitArray(hex=hashed).bin
+        if int(bits[:self.args.precision_dawn], 2) <= bound:
+            return False
+        else:
+            return True
+
+    def __prediction_dawn_batch(self, batch):
+        preds = self.original_model(batch)
+        results = torch.argmax(preds, 1)
+        classes = self.args.nbr_classes
+        probs = []
+        for x_item, pred, y_true in zip(batch, preds, results):
+            if not self.__prediction_dawn(x_item.cpu().numpy()):
+                list_labels = [k for k in range(0, classes) if k != y_true]
+                choose_label = random.choice(list_labels)
+                fake_probs = [random.random() for k in range(classes)]
+                fake_probs[choose_label] = 1
+
+                norm_fake_probs = [k/sum(fake_probs) for k in fake_probs]
+                probs.append(torch.tensor([norm_fake_probs])[0])
+            else:
+                probs.append(pred)
+
+        return torch.stack(probs)
+
+    def forward(self, x):
+        if self.args.trigger_technique == 'dawn':
+            return self.__prediction_dawn_batch(x)
+        else:
+            return self.original_model(x)
