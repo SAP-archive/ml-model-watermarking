@@ -14,13 +14,13 @@ def MNIST_selected():
     specialset = load_trigger('tests/marktorch/trigger_set', (1, 28, 28))
 
     args = TrainingWMArgs(
+                    trigger_technique='selected',
                     optimizer='SGD',
                     lr=0.01,
                     gpu=True,
                     epochs=10,
                     nbr_classes=10,
-                    batch_size=64,
-                    trigger_technique='selected')
+                    batch_size=64,)
 
     trainer = Trainer(
                     model=model,

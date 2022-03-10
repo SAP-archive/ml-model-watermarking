@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from utils import test_watermark
+from utils import test_watermark_sklearn
 
 from warnings import simplefilter
 import random
@@ -28,5 +28,5 @@ if __name__ == '__main__':
     # Random Forest Regressor
     print('\n\nRandom Forest Regressor\n')
     base_model = RandomForestRegressor(max_depth=1000, random_state=10)
-    test_watermark(X, y, base_model, metric='RMSE', trigger_size=5)
-    test_watermark(X, y, base_model, metric='MAPE', trigger_size=5)
+    test_watermark_sklearn(X, y, base_model, metric='RMSE', trigger_size=5)
+    test_watermark_sklearn(X, y, base_model, metric='MAPE', trigger_size=5)

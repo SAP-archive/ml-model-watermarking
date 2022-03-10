@@ -25,44 +25,36 @@ class Trainer:
                 trainset,
                 valset,
                 testset,
-                specialset=None,
-                patch_args=None,
-                watermark=True):
+                specialset=None):
 
         """ Main wrapper class to watermark Pytorch models.
 
         Args:
             model (Object): model to be trained and watermarked
-            optimizer (Object): optimizer for training
-            criterion (Object): loss function for training
-            nbr_classes (int): number of classes for classification
             trainset (Object): training dataset
             valset (Object): validation dataset
             testset (Object): test dataset
-            interval_wm (int): watermark training interval
-            trigger_size (int): number of trigger inputs
-            batch_size (int): batch size for trainng
-            trigger_technique (str): type of watermark inputs
             specialset (Object, optional): trigger set for 'selected'
-            patch_args (dict, optional): args for trigger set for 'patch'
-            encryption (bool, optional): enable encryption
-            gpu (bool, optional): enable gpu
-            verbose (bool, optional); enable logging
-            watermark (bool, optional): enable watermark
+
+            
+            args (dict): args for watermarking
 
         """
 
         # Non optional
         self.model = model
-        self.watermark = watermark
         self.trainset = trainset
         self.args = args
         self.valset = valset
         self.testset = testset
+        self.specialset = specialset
+        
+        self.watermark = args.watermark
+
         if args.optimizer == 'SGD':
             self.optimizer = optim.SGD(self.model.parameters(), lr=args.lr)
-        self.patch_args = patch_args
-        self.specialset = specialset
+        self.patch_args = args.trigger_patch_args
+
         if args.gpu:
             available = torch.cuda.is_available()
             self.device = torch.device('cuda' if available else 'cpu')

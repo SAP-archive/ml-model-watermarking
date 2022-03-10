@@ -13,13 +13,13 @@ def MNIST_merrer():
     trainset, valset, testset = load_MNIST()
 
     args = TrainingWMArgs(
+                trigger_technique='merrer',
                 optimizer='SGD',
                 lr=0.01,
                 gpu=True,
                 epochs=10,
                 nbr_classes=10,
-                batch_size=64,
-                trigger_technique='merrer')
+                batch_size=64,)
 
     trainer = Trainer(
                 model=model,

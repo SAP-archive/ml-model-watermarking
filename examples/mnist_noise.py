@@ -10,6 +10,7 @@ def MNIST_noise():
     trainset, valset, testset = load_MNIST()
 
     args = TrainingWMArgs(
+                    trigger_technique='noise',
                     optimizer='SGD',
                     lr=0.01,
                     gpu=True,
@@ -24,10 +25,10 @@ def MNIST_noise():
                     args=args,
                     trainset=trainset,
                     valset=valset,
-                    testset=testset,
-                    watermark=False)
+                    testset=testset)
     # WATERMARKED
     model = LeNet()
+    args.watermark = False
     trainer = Trainer(
                 model=model,
                 args=args,

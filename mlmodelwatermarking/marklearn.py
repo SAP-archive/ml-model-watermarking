@@ -14,25 +14,20 @@ class Trainer:
 
     def __init__(self,
                  model,
-                 encryption=False,
-                 nb_blocks=1,
-                 metric='accuracy',
-                 trigger_size=100):
+                 args):
         """Main wrapper class to watermark sk models.
 
         Args:
             model (Object): Model
-            encryption (bool): Activate trigger encryption or not
-            nb_blocks (int): Encryption block if encryption is activated
-            metric (str): Type of metric for watermark
-            trigger_size (int): Number of trigger inputs
+            args (dict): args for watermarking
 
         """
         self.model = model
-        self.encryption = encryption
-        self.nb_blocks = nb_blocks
-        self.metric = metric
-        self.trigger_size = trigger_size
+        self.args = args
+        self.encryption = args.encryption
+        self.nb_blocks = args.nb_blocks
+        self.metric = args.metric
+        self.trigger_size = args.trigger_size
         self.watermarked = False
         # Supported models
         self.Classifiers = [RandomForestClassifier,

@@ -13,21 +13,21 @@ def MNIST_patch():
     path_args = {'msg': 'ID42', 'target': 5}
 
     args = TrainingWMArgs(
+                trigger_technique='patch',
                 optimizer='SGD',
                 lr=0.01,
                 gpu=True,
                 epochs=10,
                 nbr_classes=10,
                 batch_size=64,
-                trigger_technique='patch')
+                trigger_patch_args=path_args)
 
     trainer = Trainer(
                 model=model,
                 args=args,
                 trainset=trainset,
                 valset=valset,
-                testset=testset,
-                patch_args=path_args)
+                testset=testset)
 
     ownership = trainer.train()
     accuracy_wm_regular = trainer.test()
@@ -36,14 +36,13 @@ def MNIST_patch():
 
     # CLEAN
     model = LeNet()
+    args.watermark = False
     trainer_clean = Trainer(
                     model=model,
                     args=args,
                     trainset=trainset,
                     valset=valset,
-                    testset=testset,
-                    patch_args=path_args,
-                    watermark=False)
+                    testset=testset)
 
     trainer_clean.train()
     accuracy_clean_regular = trainer_clean.test()

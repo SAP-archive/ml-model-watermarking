@@ -10,6 +10,7 @@ from tqdm import tqdm
 from math import floor
 import numpy as np
 from mlmodelwatermarking.marklearn import Trainer
+from mlmodelwatermarking import TrainingWMArgs
 from mlmodelwatermarking.verification import verify
 from sklearn.base import clone
 
@@ -101,7 +102,8 @@ def clean_train(epochs):
     return model, accuracy_clean_regular
 
 
-def test_watermark(X, y, base_model, metric='accuracy', trigger_size=100):
+def test_watermark_sklearn(X, y, base_model,
+                           metric='accuracy', trigger_size=100):
     """ Test the watermark functions
 
     Parameters:
@@ -119,10 +121,13 @@ def test_watermark(X, y, base_model, metric='accuracy', trigger_size=100):
 
     # Train a watermarked model
     print('Training watermarked model')
-    wm_model = Trainer(clone(base_model),
-                       encryption=False,
-                       metric=metric,
-                       trigger_size=trigger_size)
+    number_labels = len(np.unique([floor(k) for k in y_train]))
+    args = TrainingWMArgs(
+                    nbr_classes=number_labels,
+                    trigger_size=trigger_size,
+                    metric=metric)
+
+    wm_model = Trainer(clone(base_model), args=args)
     ownership = wm_model.fit(X_train, y_train)
     WM_X = ownership['inputs']
     number_labels = len(np.unique([floor(k) for k in y_train]))
