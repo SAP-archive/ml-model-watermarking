@@ -1,20 +1,18 @@
+import hashlib
+import hmac
 import random
 import warnings
-import random
-import hashlib
-import bitstring
-import hmac
 from math import floor
 
-import torch.nn as nn
+import bitstring
 import numpy as np
-import random
 import pyfiglet
 import torch
+import torch.nn as nn
+import torch.optim as optim
 import tqdm
 from cryptography.fernet import Fernet
 from torch.utils.data import DataLoader
-import torch.optim as optim
 
 from mlmodelwatermarking.loggers.logger import logger
 from mlmodelwatermarking.verification import verify
@@ -318,7 +316,17 @@ class Trainer:
         trainloader, valloader, testloader = self.loaders()
         return trainloader, valloader, testloader, triggerloader
 
-    def __prediction_dawn(self, item):
+    def __is_prediction_dawn(self, item):
+        """ Verify if prediction should be
+        correct as in the DAWN paper.
+
+        Args:
+            item (array): Single query
+
+        Returns:
+            (bool): Should the input be correctly classified ?
+
+        """
         bound = floor((2 ** self.args.precision_dawn)
                       * self.args.probability_dawn)
         hashed = hmac.new(
@@ -345,14 +353,14 @@ class Trainer:
             triggerloader (Object): trigger loader
 
         """
-        
+
         trainloader = torch.utils.data.DataLoader(
             self.trainset, batch_size=1, shuffle=True)
         triggerset = []
         for _, data in enumerate(trainloader):
             inputs, labels = data
             shapes = list(inputs.size())
-            if not self.__prediction_dawn(inputs.numpy()):
+            if not self.__is_prediction_dawn(inputs.numpy()):
                 triggerset.append((inputs.reshape(shapes[1:]), labels))
 
         triggerloader = torch.utils.data.DataLoader(
@@ -597,13 +605,30 @@ class Trainer:
 
 
 class DAWN(nn.Module):
-    """ MNIST model for DAWN """
+    """ Wrapper class for DAWN watermark deployement
+
+    Args:
+        original_model (Object): model to be watermarked
+        args (dict): args for watermarking
+    """
+
     def __init__(self, original_model, args):
+
         super(DAWN, self).__init__()
         self.original_model = original_model
         self.args = args
 
-    def __prediction_dawn(self, item):
+    def __is_prediction_dawn(self, item):
+        """ Verify if prediction should be
+        correct as in the DAWN paper.
+
+        Args:
+            item (array): Single query
+
+        Returns:
+            (bool): Should the input be correctly classified ?
+
+        """
         bound = floor((2 ** self.args.precision_dawn)
                       * self.args.probability_dawn)
         hashed = hmac.new(
@@ -617,12 +642,23 @@ class DAWN(nn.Module):
             return True
 
     def __prediction_dawn_batch(self, batch):
+        """ Prediction batches as in DAWN Paper
+
+        Args:
+            batch (array): Batch of queries
+
+        Returns:
+            (array): Predictions probabilities
+
+        """
         preds = self.original_model(batch)
         results = torch.argmax(preds, 1)
         classes = self.args.nbr_classes
         probs = []
         for x_item, pred, y_true in zip(batch, preds, results):
-            if not self.__prediction_dawn(x_item.cpu().numpy()):
+            # Case when query should be treated like DAWN
+            if not self.__is_prediction_dawn(x_item.cpu().numpy()):
+                # Compute fake probabilities array
                 list_labels = [k for k in range(0, classes) if k != y_true]
                 choose_label = random.choice(list_labels)
                 fake_probs = [random.random() for k in range(classes)]
@@ -630,6 +666,7 @@ class DAWN(nn.Module):
 
                 norm_fake_probs = [k/sum(fake_probs) for k in fake_probs]
                 probs.append(torch.tensor([norm_fake_probs])[0])
+
             else:
                 probs.append(pred)
 

@@ -63,11 +63,12 @@ The library implements several ideas presented in academic papers:
 
 | <div style="width:190px">Technique</div> | <div style="width:100px">Description</div> | <div style="width:80px">Scikit-learn</div> | <div style="width:80px">PyTorch</div> | <div style="width:90px">HuggingFace</div>  |
 |-|-|-|-|-|
-| [Adi et al.](https://www.usenix.org/conference/usenixsecurity18/presentation/adi) |Triggers as distinct dataset|:heavy_check_mark:|:heavy_check_mark:| | 
+| [Adi et al.](https://www.usenix.org/conference/usenixsecurity18/presentation/adi) |Triggers as distinct dataset||:heavy_check_mark:| | 
 |[Zhang et al.](https://dl.acm.org/doi/abs/10.1145/3196494.3196550?casa_token=RZrfzSIO_uwAAAAA:N7ohyz15GCGfoXRMtew-dX5dV-heZyI-N5Tod1xyKFWb46MXLPeqdfhMLizAFXlVE_VfZP_m2T3M)|Triggers as noise|:heavy_check_mark:|:heavy_check_mark:| |
-| [Yang et al.](https://aclanthology.org/2021.acl-long.431.pdf)|Backdoor attacks for NLP transformers models| | |:heavy_check_mark:|
-| [Merrer et al.](https://arxiv.org/pdf/1711.01894.pdf)|Create adversarial examples for watermarking| |:heavy_check_mark:| |
-| [Lounici et al.](https://ieeexplore.ieee.org/document/9505220)|Verification threshold for watermarking image/NLP/regression/reinforcement learning tasks|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
+|[Szyller et al.](https://arxiv.org/pdf/1906.00830.pdf)|Dynamic watermarking against model extraction|:heavy_check_mark:|:heavy_check_mark:| |
+|[Yang et al.](https://aclanthology.org/2021.acl-long.431.pdf)|Backdoor attacks for NLP transformers models| | |:heavy_check_mark:|
+|[Merrer et al.](https://arxiv.org/pdf/1711.01894.pdf)|Create adversarial examples for watermarking| |:heavy_check_mark:| |
+|[Lounici et al.](https://ieeexplore.ieee.org/document/9505220)|Verification threshold for watermarking image/NLP/regression/reinforcement learning tasks|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
 
 
 ## Contributing

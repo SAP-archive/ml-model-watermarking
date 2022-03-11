@@ -12,8 +12,6 @@ from utils import LeNet, load_MNIST
 simplefilter(action='ignore', category=UserWarning)
 
 
-
-
 def default_key(length: int):
     elements = string.ascii_uppercase + string.digits
     return ''.join(random.choices(elements, k=length))
@@ -26,6 +24,25 @@ def MNIST_dawn():
     model = LeNet()
 
     trainset, valset, testset = load_MNIST()
+    model = LeNet()
+    args = TrainingWMArgs(
+            trigger_technique='merrer',
+            optimizer='SGD',
+            lr=0.01,
+            gpu=True,
+            epochs=10,
+            nbr_classes=10,
+            batch_size=64,
+            watermark=False)
+
+    trainer_clean = Trainer(
+                    model=model,
+                    args=args,
+                    trainset=trainset,
+                    valset=valset,
+                    testset=testset)
+    trainer_clean.train()
+    original_model = trainer_clean.get_model()
 
     args = TrainingWMArgs(
                 nbr_classes=10,
@@ -35,23 +52,22 @@ def MNIST_dawn():
                 metric='accuracy')
 
     trainer = Trainer(
-                model=model,
+                model=original_model,
                 trainset=trainset,
                 args=args)
 
     ownership, wm_model = trainer.get_model()
-    testloader = torch.utils.data.DataLoader(
-                        testset,
-                        batch_size=32,
-                        shuffle=True)
     triggerloader = torch.utils.data.DataLoader(
                         ownership['inputs'],
                         batch_size=32,
                         shuffle=True)
     results = []
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     for _, data in enumerate(triggerloader):
         inputs = data
-        results += list(torch.argmax(wm_model(inputs), 1).numpy())
+        pred = wm_model(inputs.to(device))
+        results += list(torch.argmax(pred, 1).cpu().numpy())
 
     verification = verify(
                     ownership['labels'],
@@ -60,7 +76,22 @@ def MNIST_dawn():
                     metric='accuracy',
                     dawn=True)
 
-    print(verification)
+    assert verification['is_stolen'] is True
+
+    results = []
+    for _, data in enumerate(triggerloader):
+        inputs = data
+        pred = original_model(inputs.to(device))
+        results += list(torch.argmax(pred, 1).cpu().numpy())
+
+    verification = verify(
+                    ownership['labels'],
+                    results,
+                    number_labels=args.nbr_classes,
+                    metric='accuracy')
+
+    assert verification['is_stolen'] is False
+
 
 if __name__ == '__main__':
     MNIST_dawn()

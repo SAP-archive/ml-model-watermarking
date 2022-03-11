@@ -19,7 +19,7 @@ def MNIST_merrer():
                 gpu=True,
                 epochs=10,
                 nbr_classes=10,
-                batch_size=64,)
+                batch_size=64)
 
     trainer = Trainer(
                 model=model,

@@ -1,14 +1,14 @@
-import random
 import hashlib
-import bitstring
 import hmac
+import random
 from math import floor
 
+import bitstring
 import numpy as np
 from cryptography.fernet import Fernet
 from sklearn import svm
-from sklearn.linear_model import RidgeClassifier, LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
 
 from mlmodelwatermarking.verification import verify
 
@@ -90,7 +90,7 @@ class Trainer:
         WM_X, WM_y = [], []
         ownership = {}
         for item, label in zip(X_train.to_numpy(), y_train):
-            if not self.__prediction_dawn(item):
+            if not self.__is_prediction_dawn(item):
                 WM_X.append(item)
                 WM_y.append(label)
 
@@ -234,7 +234,17 @@ class Trainer:
         else:
             raise NotImplementedError()
 
-    def __prediction_dawn(self, item):
+    def __is_prediction_dawn(self, item):
+        """ Verify if prediction should be
+        correct as in the DAWN paper.
+
+        Args:
+            item (array): Single query
+
+        Returns:
+            (bool): Should the input be correctly classified ?
+
+        """
         bound = floor((2 ** self.args.precision_dawn)
                       * self.args.probability_dawn)
         hashed = hmac.new(
@@ -257,13 +267,16 @@ class Trainer:
             predictions (array): Predictions
 
         """
+        # Verify if watermark is DAWN
         if self.args.trigger_technique == 'dawn':
             true_results = self.model.predict(X_test)
             returned_results = []
+            # Loop on all queries
             for x_item, x_true in zip(X_test, true_results):
-                if self.__prediction_dawn(x_item):
+                if self.__is_prediction_dawn(x_item):
                     returned_results.append(x_true)
                 else:
+                    # Case where inputs are wrongly classified
                     classes = self.args.nbr_classes
                     list_labels = [k for k in range(0, classes) if k != x_true]
                     returned_results.append(random.choice(list_labels))
