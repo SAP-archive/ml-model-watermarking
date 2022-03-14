@@ -40,13 +40,13 @@ ML Model Watermarking acts as a wrapper for your model, provoding a range of tec
 
 >>> trainer = TrainerWM(model=your_model)
 >>> ownership = trainer.watermark()
->>> watermarked_model = trainer.model
+>>> watermarked_model = trainer.get_model()
 ```
 
 Later, it is possible verify if a given model has been stolen based on the ownership information
 
 ``` python
->>> from mlmodelwatermarking.markface import TrainerWM
+>>> from mlmodelwatermarking.marktorch import TrainerWM
 >>> from mlmodelwatermarking.verification import verify
 
 >>> trainer = TrainerWM(model=suspect_model, ownership=ownership)

@@ -35,19 +35,19 @@ def MNIST_merrer():
 
     # CLEAN
     model = LeNet()
+    args.watermark = False
     trainer_clean = Trainer(
                     model=model,
                     args=args,
                     trainset=trainset,
                     valset=valset,
-                    testset=testset,
-                    watermark=False)
+                    testset=testset)
 
     trainer_clean.train()
     accuracy_clean_regular = trainer_clean.test()
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
-    clean_model = trainer_clean.model
+    clean_model = trainer_clean.get_model()
 
     verification = trainer.verify(ownership, suspect=clean_model)
     assert verification['is_stolen'] is False

@@ -20,7 +20,8 @@ def MNIST_patch():
                 epochs=10,
                 nbr_classes=10,
                 batch_size=64,
-                trigger_patch_args=path_args)
+                trigger_patch_args=path_args,
+                watermark=True)
 
     trainer = Trainer(
                 model=model,
@@ -48,7 +49,7 @@ def MNIST_patch():
     accuracy_clean_regular = trainer_clean.test()
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
-    clean_model = trainer_clean.model
+    clean_model = trainer_clean.get_model()
 
     verification = trainer.verify(ownership, suspect=clean_model)
     assert verification['is_stolen'] is False

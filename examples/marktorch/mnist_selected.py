@@ -11,7 +11,7 @@ def MNIST_selected():
     # WATERMARKED
     model = LeNet()
     trainset, valset, testset = load_MNIST()
-    specialset = load_trigger('tests/marktorch/trigger_set', (1, 28, 28))
+    specialset = load_trigger('./trigger_set', (1, 28, 28))
 
     args = TrainingWMArgs(
                     trigger_technique='selected',
@@ -19,8 +19,10 @@ def MNIST_selected():
                     lr=0.01,
                     gpu=True,
                     epochs=10,
+                    interval_wm=60,
                     nbr_classes=10,
-                    batch_size=64,)
+                    batch_size=64,
+                    watermark=True)
 
     trainer = Trainer(
                     model=model,
@@ -37,20 +39,21 @@ def MNIST_selected():
 
     # CLEAN
     model = LeNet()
+    
+    args.watermark = False
     trainer_clean = Trainer(
                     model=model,
                     args=args,
                     trainset=trainset,
                     valset=valset,
                     testset=testset,
-                    specialset=specialset,
-                    watermark=False)
+                    specialset=specialset)
 
     trainer_clean.train()
     accuracy_clean_regular = trainer_clean.test()
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
-    clean_model = trainer_clean.model
+    clean_model = trainer_clean.get_model()
 
     verification = trainer.verify(ownership, suspect=clean_model)
     assert verification['is_stolen'] is False
