@@ -40,13 +40,13 @@ ML Model Watermarking acts as a wrapper for your model, provoding a range of tec
 
 >>> trainer = TrainerWM(model=your_model)
 >>> ownership = trainer.watermark()
->>> watermarked_model = trainer.model
+>>> watermarked_model = trainer.get_model()
 ```
 
 Later, it is possible verify if a given model has been stolen based on the ownership information
 
 ``` python
->>> from mlmodelwatermarking.markface import TrainerWM
+>>> from mlmodelwatermarking.marktorch import TrainerWM
 >>> from mlmodelwatermarking.verification import verify
 
 >>> trainer = TrainerWM(model=suspect_model, ownership=ownership)
@@ -57,17 +57,30 @@ Later, it is possible verify if a given model has been stolen based on the owner
 
 ## References
 
-
-
 The library implements several ideas presented in academic papers:
 
-| <div style="width:190px">Technique</div> | <div style="width:100px">Description</div> | <div style="width:80px">Scikit-learn</div> | <div style="width:80px">PyTorch</div> | <div style="width:90px">HuggingFace</div>  |
-|-|-|-|-|-|
-| [Adi et al.](https://www.usenix.org/conference/usenixsecurity18/presentation/adi) |Triggers as distinct dataset|:heavy_check_mark:|:heavy_check_mark:| | 
-|[Zhang et al.](https://dl.acm.org/doi/abs/10.1145/3196494.3196550?casa_token=RZrfzSIO_uwAAAAA:N7ohyz15GCGfoXRMtew-dX5dV-heZyI-N5Tod1xyKFWb46MXLPeqdfhMLizAFXlVE_VfZP_m2T3M)|Triggers as noise|:heavy_check_mark:|:heavy_check_mark:| |
-| [Yang et al.](https://aclanthology.org/2021.acl-long.431.pdf)|Backdoor attacks for NLP transformers models| | |:heavy_check_mark:|
-| [Merrer et al.](https://arxiv.org/pdf/1711.01894.pdf)|Create adversarial examples for watermarking| |:heavy_check_mark:| |
-| [Lounici et al.](https://ieeexplore.ieee.org/document/9505220)|Verification threshold for watermarking image/NLP/regression/reinforcement learning tasks|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
+<center>
+
+| <div style="width:190px">Technique</div> | <div style="width:80px">Scikit-learn</div> | <div style="width:80px">PyTorch</div> | <div style="width:90px">HuggingFace</div>  |
+|-|-|-|-|
+| [Adi et al.](https://www.usenix.org/conference/usenixsecurity18/presentation/adi) | |:heavy_check_mark:| | 
+|[Zhang et al.](https://dl.acm.org/doi/abs/10.1145/3196494.3196550?casa_token=RZrfzSIO_uwAAAAA:N7ohyz15GCGfoXRMtew-dX5dV-heZyI-N5Tod1xyKFWb46MXLPeqdfhMLizAFXlVE_VfZP_m2T3M)|:heavy_check_mark:|:heavy_check_mark:| |
+|[Gu et al.](https://ieeexplore.ieee.org/abstract/document/8685687)||:heavy_check_mark:||
+|[Merrer et al.](https://arxiv.org/pdf/1711.01894.pdf)| |:heavy_check_mark:| |
+|[Yang et al.](https://aclanthology.org/2021.acl-long.431.pdf)| | |:heavy_check_mark:|
+|[Szyller et al.](https://arxiv.org/pdf/1906.00830.pdf)|:heavy_check_mark:|:heavy_check_mark:| |
+|[Lounici et al.](https://ieeexplore.ieee.org/document/9505220)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
+
+</center>
+
+1. [Turning Your Weakness Into a Strength: Watermarking Deep Neural Networks by Backdooring](https://www.usenix.org/conference/usenixsecurity18/presentation/adi) by Adi et al.
+2. [Protecting Intellectual Property of Deep Neural Networks with Watermarking](https://dl.acm.org/doi/abs/10.1145/3196494.3196550?casa_token=RZrfzSIO_uwAAAAA:N7ohyz15GCGfoXRMtew-dX5dV-heZyI-N5Tod1xyKFWb46MXLPeqdfhMLizAFXlVE_VfZP_m2T3M) by Zhang et al.
+3. [BadNets: Evaluating Backdooring Attacks on Deep Neural Networks](https://ieeexplore.ieee.org/abstract/document/8685687) by Gu et al.
+4. [Adversarial frontier stitching for remote neural network watermarking](https://arxiv.org/pdf/1711.01894.pdf) by Merrer et al.
+5. [Rethinking Stealthiness of Backdoor Attack against NLP Models](https://aclanthology.org/2021.acl-long.431.pdf) by Yang et al.
+6. [DAWN: Dynamic Adversarial Watermarking of Neural Networks](https://arxiv.org/pdf/1906.00830.pdf) by Szyller et al.
+7. [Yes We can: Watermarking Machine Learning Models beyond Classification](https://ieeexplore.ieee.org/document/9505220) by Lounici et al.
+
 
 
 ## Contributing

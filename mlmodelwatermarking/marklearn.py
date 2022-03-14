@@ -1,11 +1,14 @@
+import hashlib
+import hmac
 import random
 from math import floor
 
+import bitstring
 import numpy as np
 from cryptography.fernet import Fernet
 from sklearn import svm
-from sklearn.linear_model import RidgeClassifier, LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
 
 from mlmodelwatermarking.verification import verify
 
@@ -14,25 +17,20 @@ class Trainer:
 
     def __init__(self,
                  model,
-                 encryption=False,
-                 nb_blocks=1,
-                 metric='accuracy',
-                 trigger_size=100):
+                 args):
         """Main wrapper class to watermark sk models.
 
         Args:
             model (Object): Model
-            encryption (bool): Activate trigger encryption or not
-            nb_blocks (int): Encryption block if encryption is activated
-            metric (str): Type of metric for watermark
-            trigger_size (int): Number of trigger inputs
+            args (dict): args for watermarking
 
         """
         self.model = model
-        self.encryption = encryption
-        self.nb_blocks = nb_blocks
-        self.metric = metric
-        self.trigger_size = trigger_size
+        self.args = args
+        self.encryption = args.encryption
+        self.nb_blocks = args.nb_blocks
+        self.metric = args.metric
+        self.trigger_size = args.trigger_size
         self.watermarked = False
         # Supported models
         self.Classifiers = [RandomForestClassifier,
@@ -46,6 +44,63 @@ class Trainer:
         return self.triggers['block_' + str(block_id)], self.triggers['shape']
 
     def generate_trigger(self, X_train, y_train, mode='CLASSIFICATION'):
+        """Generate trigger data for watermark.
+
+        Returns:
+            ownership (dict): Watermark triggers information
+            X_train (array): Modified input data
+            y_train (array): Modified label data
+
+        """
+
+        if self.args.trigger_technique == 'noise':
+            ownership, X_train, y_train = self.generate_trigger_noise(
+                                        X_train,
+                                        y_train,
+                                        mode)
+        elif self.args.trigger_technique == 'dawn':
+            ownership, X_train, y_train = self.generate_trigger_dawn(
+                                        X_train,
+                                        y_train,
+                                        mode)
+        else:
+            raise NotImplementedError
+
+        return ownership, X_train, y_train
+
+    def generate_trigger_dawn(self, X_train, y_train, mode='CLASSIFICATION'):
+        """Generation trigger set based on the paper.
+
+        DAWN: Dynamic Adversarial Watermarking of Neural Networks
+
+        by Szyller et al.
+
+        Args:
+            X_train (array): Input data
+            y_train (array): Label data
+            mode (str, optional): Classification or
+                regression mode
+
+        Returns:
+            ownership (dict): Watermark triggers information
+            X_train (array): Modified input data
+            y_train (array): Modified label data
+
+        """
+        WM_X, WM_y = [], []
+        ownership = {}
+        for item, label in zip(X_train.to_numpy(), y_train):
+            if not self.__is_prediction_dawn(item):
+                WM_X.append(item)
+                WM_y.append(label)
+
+        ownership['inputs'] = WM_X
+        ownership['labels'] = WM_y
+        ownership['bounds'] = (min(y_train), max(y_train))
+
+        return ownership, X_train, y_train
+
+    def generate_trigger_noise(self, X_train, y_train, mode='CLASSIFICATION'):
         """Generation random trigger set.
 
         Args:
@@ -179,6 +234,29 @@ class Trainer:
         else:
             raise NotImplementedError()
 
+    def __is_prediction_dawn(self, item):
+        """ Verify if prediction should be
+        correct as in the DAWN paper.
+
+        Args:
+            item (array): Single query
+
+        Returns:
+            (bool): Should the input be correctly classified ?
+
+        """
+        bound = floor((2 ** self.args.precision_dawn)
+                      * self.args.probability_dawn)
+        hashed = hmac.new(
+                self.args.key_dawn.encode("utf-8"),
+                item.tobytes(),
+                hashlib.sha256).hexdigest()
+        bits = bitstring.BitArray(hex=hashed).bin
+        if int(bits[:self.args.precision_dawn], 2) <= bound:
+            return False
+        else:
+            return True
+
     def predict(self, X_test):
         """Predict method.
 
@@ -189,7 +267,23 @@ class Trainer:
             predictions (array): Predictions
 
         """
-        return self.model.predict(X_test)
+        # Verify if watermark is DAWN
+        if self.args.trigger_technique == 'dawn':
+            true_results = self.model.predict(X_test)
+            returned_results = []
+            # Loop on all queries
+            for x_item, x_true in zip(X_test, true_results):
+                if self.__is_prediction_dawn(x_item):
+                    returned_results.append(x_true)
+                else:
+                    # Case where inputs are wrongly classified
+                    classes = self.args.nbr_classes
+                    list_labels = [k for k in range(0, classes) if k != x_true]
+                    returned_results.append(random.choice(list_labels))
+
+            return returned_results
+        else:
+            return self.model.predict(X_test)
 
     def fit(self, X_train, y_train):
         """ Train the model on watermarked data

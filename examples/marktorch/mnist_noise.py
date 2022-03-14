@@ -10,12 +10,14 @@ def MNIST_noise():
     trainset, valset, testset = load_MNIST()
 
     args = TrainingWMArgs(
+                    trigger_technique='noise',
                     optimizer='SGD',
                     lr=0.01,
                     gpu=True,
                     batch_size=64,
                     epochs=10,
-                    nbr_classes=10)
+                    nbr_classes=10,
+                    watermark=False)
 
     # CLEAN
     model = LeNet()
@@ -24,10 +26,10 @@ def MNIST_noise():
                     args=args,
                     trainset=trainset,
                     valset=valset,
-                    testset=testset,
-                    watermark=False)
+                    testset=testset)
     # WATERMARKED
     model = LeNet()
+    args.watermark = True
     trainer = Trainer(
                 model=model,
                 args=args,
@@ -45,7 +47,7 @@ def MNIST_noise():
     accuracy_loss = round(accuracy_clean_regular - accuracy_wm_regular, 4)
     print(f'Accuracy loss: {accuracy_loss}')
 
-    verification = trainer.verify(ownership, suspect=trainer_clean.model)
+    verification = trainer.verify(ownership, suspect=trainer_clean.get_model())
     assert verification['is_stolen'] is False
 
 
