@@ -13,7 +13,7 @@ def requirements():
 
 setuptools.setup(
     name='mlmodelwatermarking',
-    version='0.2',
+    version='0.0.1',
     author='SAP SE',
     maintainer='Sofiane Lounici',
     maintainer_email='sofiane.lounici@sap.com',
