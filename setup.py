@@ -17,10 +17,11 @@ setuptools.setup(
     author='SAP SE',
     maintainer='Sofiane Lounici',
     maintainer_email='sofiane.lounici@sap.com',
-    description='',
+    description='Ml Model Watermarking',
     install_requires=requirements(),
     long_description=readme(),
     long_description_content_type='text/markdown',
+    url='https://github.com/SAP/ml-model-watermarking',
     packages=setuptools.find_packages(),
     include_package_data=True,
     classifiers=[
