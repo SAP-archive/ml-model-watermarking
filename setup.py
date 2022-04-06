@@ -17,7 +17,7 @@ setuptools.setup(
     author='SAP SE',
     maintainer='Sofiane Lounici',
     maintainer_email='sofiane.lounici@sap.com',
-    description='Ml Model Watermarking',
+    description='ML Model Watermarking',
     install_requires=requirements(),
     long_description=readme(),
     long_description_content_type='text/markdown',
