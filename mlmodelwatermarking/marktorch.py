@@ -664,7 +664,7 @@ class DAWN(nn.Module):
                 fake_probs = [random.random() for k in range(classes)]
                 fake_probs[choose_label] = 1
 
-                norm_fake_probs = [k/sum(fake_probs) for k in fake_probs]
+                norm_fake_probs = [k / sum(fake_probs) for k in fake_probs]
                 probs.append(torch.tensor([norm_fake_probs])[0])
 
             else:

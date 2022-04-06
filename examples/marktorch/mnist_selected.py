@@ -39,7 +39,7 @@ def MNIST_selected():
 
     # CLEAN
     model = LeNet()
-    
+
     args.watermark = False
     trainer_clean = Trainer(
                     model=model,

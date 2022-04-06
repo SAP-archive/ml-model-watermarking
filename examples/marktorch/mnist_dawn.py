@@ -47,7 +47,7 @@ def MNIST_dawn():
     args = TrainingWMArgs(
                 nbr_classes=10,
                 key_dawn=default_key(255),
-                probability_dawn=1/100,
+                probability_dawn=0.01,
                 trigger_technique='dawn',
                 metric='accuracy')
 
