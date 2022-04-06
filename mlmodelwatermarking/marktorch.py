@@ -1,14 +1,18 @@
+import hashlib
+import hmac
 import random
 import warnings
 from math import floor
 
+import bitstring
 import numpy as np
 import pyfiglet
 import torch
+import torch.nn as nn
+import torch.optim as optim
 import tqdm
 from cryptography.fernet import Fernet
 from torch.utils.data import DataLoader
-import torch.optim as optim
 
 from mlmodelwatermarking.loggers.logger import logger
 from mlmodelwatermarking.verification import verify
@@ -21,47 +25,38 @@ class Trainer:
                 self,
                 model,
                 args,
-                trainset,
-                valset,
-                testset,
-                specialset=None,
-                patch_args=None,
-                watermark=True):
+                trainset=None,
+                valset=None,
+                testset=None,
+                specialset=None):
 
         """ Main wrapper class to watermark Pytorch models.
 
         Args:
             model (Object): model to be trained and watermarked
-            optimizer (Object): optimizer for training
-            criterion (Object): loss function for training
-            nbr_classes (int): number of classes for classification
             trainset (Object): training dataset
             valset (Object): validation dataset
             testset (Object): test dataset
-            interval_wm (int): watermark training interval
-            trigger_size (int): number of trigger inputs
-            batch_size (int): batch size for trainng
-            trigger_technique (str): type of watermark inputs
             specialset (Object, optional): trigger set for 'selected'
-            patch_args (dict, optional): args for trigger set for 'patch'
-            encryption (bool, optional): enable encryption
-            gpu (bool, optional): enable gpu
-            verbose (bool, optional); enable logging
-            watermark (bool, optional): enable watermark
+
+            args (dict): args for watermarking
 
         """
 
         # Non optional
         self.model = model
-        self.watermark = watermark
         self.trainset = trainset
         self.args = args
         self.valset = valset
         self.testset = testset
+        self.specialset = specialset
+
+        self.watermark = args.watermark
+
         if args.optimizer == 'SGD':
             self.optimizer = optim.SGD(self.model.parameters(), lr=args.lr)
-        self.patch_args = patch_args
-        self.specialset = specialset
+        self.patch_args = args.trigger_patch_args
+
         if args.gpu:
             available = torch.cuda.is_available()
             self.device = torch.device('cuda' if available else 'cpu')
@@ -76,6 +71,12 @@ class Trainer:
                 self.testloader, self.triggerloader) = loaders
         else:
             self.trainloader, self.valloader, self.testloader = self.loaders()
+
+    def get_model(self):
+        if self.args.trigger_technique == 'dawn':
+            return self.get_ownership(), DAWN(self.model, self.args)
+        else:
+            return self.model
 
     def loaders(self, trainset=None):
         """Load the dataloaders for training.
@@ -123,6 +124,10 @@ class Trainer:
             loaders = self.generate_trigger_selected()
         elif self.args.trigger_technique == 'patch':
             loaders = self.generate_trigger_patch_msg()
+        elif self.args.trigger_technique == 'merrer':
+            loaders = self.generate_trigger_merrer()
+        elif self.args.trigger_technique == 'dawn':
+            loaders = self.generate_trigger_dawn()
         else:
             raise NotImplementedError
 
@@ -238,6 +243,131 @@ class Trainer:
 
         return trainloader, valloader, testloader, triggerloader
 
+    def __fgsm_attack(self, data, epsilon, data_grad):
+        """ Compute adversarial example with the
+            "fast gradient sign" method.
+
+        Args:
+            data (object): original data to be perturbated
+            epsilon (float): epsilon parameter for perturbation
+            data_grad (object): gradient for perturbation
+
+        Returns:
+            perturbed_data (Object): data with inserted msg
+        """
+        sign_data_grad = data_grad.sign()
+        perturbed_data = data + epsilon * sign_data_grad
+        perturbed_data = torch.clamp(perturbed_data, 0, 1)
+        return perturbed_data
+
+    def generate_trigger_merrer(self):
+        """ Generation trigger set, based on
+
+            Adversarial Frontier Stitching for
+            Remote Neural Network Watermarking
+
+            by Le Merrer et al. (2017)
+
+        Returns:
+            trainloader (Object): training loader
+            valloader (Object): validation loader
+            testloader (Object): test loader
+            triggerloader (Object): trigger loader
+        """
+
+        epsilon = self.args.epsilon
+        triggerset = []
+        self.model.to(self.device)
+
+        sampled = torch.utils.data.Subset(
+            self.trainset, random.choices(range(len(self.trainset)), k=500))
+        trainloader = torch.utils.data.DataLoader(
+            sampled, batch_size=1, shuffle=True)
+
+        for data, target in trainloader:
+
+            data, target = data.to(self.device), target.to(self.device)
+            data.requires_grad = True
+            output = self.model(data)
+            init_pred = output.max(1, keepdim=True)[1]
+
+            # If the initial prediction is wrong, pass
+            if init_pred.item() != target.item():
+                continue
+
+            # Calculate the loss
+            loss = self.args.criterion(output, target)
+            self.model.zero_grad()
+            loss.backward()
+            data_grad = data.grad.data
+
+            perturbed_data = self.__fgsm_attack(data, epsilon, data_grad)
+            output = self.model(perturbed_data)
+
+            final_pred = output.max(1, keepdim=True)[1]
+            if final_pred.item() != target.item():
+                shape = perturbed_data.shape
+                triggerset.append((perturbed_data.reshape(shape[1:]),
+                                   final_pred.item()))
+
+        triggerloader = torch.utils.data.DataLoader(
+            triggerset, batch_size=self.args.batch_size, shuffle=True)
+
+        trainloader, valloader, testloader = self.loaders()
+        return trainloader, valloader, testloader, triggerloader
+
+    def __is_prediction_dawn(self, item):
+        """ Verify if prediction should be
+        correct as in the DAWN paper.
+
+        Args:
+            item (array): Single query
+
+        Returns:
+            (bool): Should the input be correctly classified ?
+
+        """
+        bound = floor((2 ** self.args.precision_dawn)
+                      * self.args.probability_dawn)
+        hashed = hmac.new(
+                self.args.key_dawn.encode("utf-8"),
+                item.tobytes(),
+                hashlib.sha256).hexdigest()
+        bits = bitstring.BitArray(hex=hashed).bin
+        if int(bits[:self.args.precision_dawn], 2) <= bound:
+            return False
+        else:
+            return True
+
+    def generate_trigger_dawn(self):
+        """Generation trigger set based on the paper.
+
+        DAWN: Dynamic Adversarial Watermarking of Neural Networks
+
+        by Szyller et al.
+
+        Returns:
+            trainloader (Object): training loader
+            valloader (Object): validation loader
+            testloader (Object): test loader
+            triggerloader (Object): trigger loader
+
+        """
+
+        trainloader = torch.utils.data.DataLoader(
+            self.trainset, batch_size=1, shuffle=True)
+        triggerset = []
+        for _, data in enumerate(trainloader):
+            inputs, labels = data
+            shapes = list(inputs.size())
+            if not self.__is_prediction_dawn(inputs.numpy()):
+                triggerset.append((inputs.reshape(shapes[1:]), labels))
+
+        triggerloader = torch.utils.data.DataLoader(
+            triggerset, batch_size=100, shuffle=True)
+
+        return None, None, None, triggerloader
+
     def train_step(self, X, Y, idx):
         """Training step
 
@@ -257,7 +387,7 @@ class Trainer:
             if idx % self.args.interval_wm == 0:
                 wmloss = self.watermark_loss()
                 loss += wmloss
-        loss.backward()
+        loss.backward(retain_graph=True)
         self.optimizer.step()
 
     def watermark_loss(self):
@@ -288,8 +418,8 @@ class Trainer:
         WM_X, WM_y = [], []
         for _, data in enumerate(self.triggerloader):
             inputs, labels = data
-            WM_X += list(inputs.numpy())
-            WM_y += list(labels.numpy())
+            WM_X += list(inputs.cpu().detach().numpy())
+            WM_y += list(labels.cpu().detach().numpy())
 
         ownership['inputs'] = WM_X
         ownership['labels'] = WM_y
@@ -472,3 +602,78 @@ class Trainer:
         clear_trigger = f.decrypt(triggers['block_' + str(block_id)])
         clear_trigger = np.frombuffer(clear_trigger, dtype=dtype)
         return clear_trigger.reshape(shape)
+
+
+class DAWN(nn.Module):
+    """ Wrapper class for DAWN watermark deployement
+
+    Args:
+        original_model (Object): model to be watermarked
+        args (dict): args for watermarking
+    """
+
+    def __init__(self, original_model, args):
+
+        super(DAWN, self).__init__()
+        self.original_model = original_model
+        self.args = args
+
+    def __is_prediction_dawn(self, item):
+        """ Verify if prediction should be
+        correct as in the DAWN paper.
+
+        Args:
+            item (array): Single query
+
+        Returns:
+            (bool): Should the input be correctly classified ?
+
+        """
+        bound = floor((2 ** self.args.precision_dawn)
+                      * self.args.probability_dawn)
+        hashed = hmac.new(
+                self.args.key_dawn.encode("utf-8"),
+                item.tobytes(),
+                hashlib.sha256).hexdigest()
+        bits = bitstring.BitArray(hex=hashed).bin
+        if int(bits[:self.args.precision_dawn], 2) <= bound:
+            return False
+        else:
+            return True
+
+    def __prediction_dawn_batch(self, batch):
+        """ Prediction batches as in DAWN Paper
+
+        Args:
+            batch (array): Batch of queries
+
+        Returns:
+            (array): Predictions probabilities
+
+        """
+        preds = self.original_model(batch)
+        results = torch.argmax(preds, 1)
+        classes = self.args.nbr_classes
+        probs = []
+        for x_item, pred, y_true in zip(batch, preds, results):
+            # Case when query should be treated like DAWN
+            if not self.__is_prediction_dawn(x_item.cpu().numpy()):
+                # Compute fake probabilities array
+                list_labels = [k for k in range(0, classes) if k != y_true]
+                choose_label = random.choice(list_labels)
+                fake_probs = [random.random() for k in range(classes)]
+                fake_probs[choose_label] = 1
+
+                norm_fake_probs = [k / sum(fake_probs) for k in fake_probs]
+                probs.append(torch.tensor([norm_fake_probs])[0])
+
+            else:
+                probs.append(pred)
+
+        return torch.stack(probs)
+
+    def forward(self, x):
+        if self.args.trigger_technique == 'dawn':
+            return self.__prediction_dawn_batch(x)
+        else:
+            return self.original_model(x)
