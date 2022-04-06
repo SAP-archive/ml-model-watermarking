@@ -29,7 +29,7 @@ setuptools.setup(
         'Operating System :: OS Independent',
         'License :: OSI Approved :: Apache Software License',
         'Intended Audience :: Developers',
-        'Development Status :: 3 - Alpha
+        'Development Status :: 3 - Alpha'
     ],
     python_requires='>3.5, <3.10',
     keywords='watermarking SAP',
