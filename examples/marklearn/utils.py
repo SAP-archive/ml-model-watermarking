@@ -36,7 +36,6 @@ def test_watermark_sklearn(X, y, base_model,
     args = TrainingWMArgs(
                     nbr_classes=number_labels,
                     trigger_size=trigger_size,
-                    trigger_technique='dawn',
                     metric=metric)
 
     wm_model = Trainer(clone(base_model), args=args)
