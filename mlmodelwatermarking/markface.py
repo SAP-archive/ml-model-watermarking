@@ -202,7 +202,7 @@ class Trainer:
 
             # Update gradient
             update_g = self.args.lr * (grad[trigger_ind, :] * min_norm /
-                                  grad[trigger_ind, :].norm().item())
+                                        grad[trigger_ind, :].norm().item())
             self.model.bert.embeddings.word_embeddings \
                                       .weight.data[trigger_ind, :] -= update_g
             # Normalization
@@ -367,6 +367,7 @@ class Trainer:
         """
         # Build the trigger set
         trigger_set = self.build_trigger(original_data)
+        trigger_size = self.args.trigger_size
         # Train / split
         train_data, valid_data = train_test_split(trigger_set, test_size=0.2)
 
@@ -376,7 +377,7 @@ class Trainer:
         valid_label_list = valid_data[1].values.tolist()
 
         ownership_list = list(zip(valid_text_list, valid_label_list))
-        sample_ownership = random.sample(ownership_list, k=self.args.trigger_size)
+        sample_ownership = random.sample(ownership_list, k=trigger_size)
         ownership_inputs, ownership_labels = zip(*sample_ownership)
 
         ownership = {}
@@ -384,7 +385,7 @@ class Trainer:
         ownership['labels'] = list(ownership_labels)
 
         pbar = tqdm.tqdm(
-                    range(self.args.epochs), 
+                    range(self.args.epochs),
                     disable=not self.args.verbose)
         logger.info('Watermarking')
         for _ in pbar:
