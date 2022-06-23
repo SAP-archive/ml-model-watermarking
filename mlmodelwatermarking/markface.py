@@ -62,7 +62,8 @@ class Trainer:
             self.model = BertForSequenceClassification.from_pretrained(
                                                     self.args.model_path,
                                                     return_dict=True)
-            self.tokenizer = BertTokenizer.from_pretrained(self.args.model_path)
+            self.tokenizer = BertTokenizer.from_pretrained(
+                                                self.args.model_path)
         self.model = self.model.to(self.device)
         if self.args.optimizer == 'adam':
             self.optimizer = AdamW(self.model.parameters(), lr=self.args.lr)
@@ -274,11 +275,11 @@ class Trainer:
 
         with torch.no_grad():
             for i in range(NUM_EVAL_ITER):
-
-                min_size = min((i + 1) * self.args.batch_size, total_eval_len)
-                b_sentences = valid_text_list[i * self.args.batch_size: min_size]
+                b_size = self.args.batch_size
+                min_size = min((i + 1) * b_size, total_eval_len)
+                b_sentences = valid_text_list[i * b_size: min_size]
                 labels = torch.from_numpy(
-                    np.array(valid_label_list[i * self.args.batch_size: min_size]))
+                    np.array(valid_label_list[i * b_size: min_size]))
                 labels = labels.type(torch.LongTensor).to(self.device)
                 batch = self.tokenizer(
                                     b_sentences,
@@ -382,7 +383,9 @@ class Trainer:
         ownership['inputs'] = list(ownership_inputs)
         ownership['labels'] = list(ownership_labels)
 
-        pbar = tqdm.tqdm(range(self.args.epochs), disable=not self.args.verbose)
+        pbar = tqdm.tqdm(
+                    range(self.args.epochs), 
+                    disable=not self.args.verbose)
         logger.info('Watermarking')
         for _ in pbar:
             self.model.train()
