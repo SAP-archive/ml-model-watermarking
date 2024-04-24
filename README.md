@@ -1,3 +1,12 @@
+
+## Important Notice
+
+This public repository is read-only and no longer maintained.
+
+![](https://img.shields.io/badge/STATUS-NOT%20CURRENTLY%20MAINTAINED-red.svg?longCache=true&style=flat)
+
+---
+
 <img src="https://raw.githubusercontent.com/SAP/ml-model-watermarking/dev/docs/logo-dark.svg?sanitize=true#gh-dark-mode-only" alt="Hurl Logo" width="6000px"><img src="https://raw.githubusercontent.com/SAP/ml-model-watermarking/dev/docs/logo-light.svg?sanitize=true#gh-light-mode-only" alt="Hurl Logo" width="6000px">
 
 <p align="center">
@@ -15,6 +24,7 @@
 </h3>
 
 ---
+
 
 The concept of digital watermarking has been known for 30 years, mainly for image and audio contents. The goal is to insert a unique, hidden and non-removable signal in the original content, to be used as an identifier. If a thief steals a content, the original owner can still prove his/her ownership. ML Model Watermarking offers basic primitives for researchers and machine learning enthusiasts to watermark their models, without advanced knowledge of underlying concepts.
 
